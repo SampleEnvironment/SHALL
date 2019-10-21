@@ -452,7 +452,7 @@ std::list<std::string> Client_Main::getNodePropertiesKeyList(std::string Node)
 {
     std::list<std::string> keylist;
     QString Nod(QString::fromStdString(Node));
-    nlohmann::json nodprops(m_pGui->getNodeProperties(Nod));
+    SECoP_json nodprops(m_pGui->getNodeProperties(Nod));
     if (nodprops.is_object())
         for (auto &it : nodprops.items())
             keylist.push_back(it.key());
@@ -464,7 +464,7 @@ std::list<std::string> Client_Main::getModulePropertiesKeyList(std::string Node,
     std::list<std::string> keylist;
     QString Nod(QString::fromStdString(Node));
     QString Mod(QString::fromStdString(Module));
-    nlohmann::json modprops(m_pGui->getModuleProperties(Nod, Mod));
+    SECoP_json modprops(m_pGui->getModuleProperties(Nod, Mod));
     if (modprops.is_object())
         for (auto &it : modprops.items())
             keylist.push_back(it.key());
@@ -477,7 +477,7 @@ std::list<std::string> Client_Main::getAccPropertiesKeyList(std::string Node, st
     QString Nod(QString::fromStdString(Node));
     QString Mod(QString::fromStdString(Module));
     QString Acc(QString::fromStdString(Acce));
-    nlohmann::json accprops(m_pGui->getAccProperties(Nod, Mod, Acc));
+    SECoP_json accprops(m_pGui->getAccProperties(Nod, Mod, Acc));
     if (accprops.is_object())
         for (auto &it : accprops.items())
             keylist.push_back(it.key());
@@ -500,7 +500,7 @@ std::string Client_Main::getProperty(std::string Node, std::string Module, std::
     QString Nod(QString::fromStdString(Node));
     QString Mod(QString::fromStdString(Module));
     QString Ac (QString::fromStdString(Acc));
-    nlohmann::json props;
+    SECoP_json props;
     if(!Acc.empty()) //it is a accessible
         props = m_pGui->getAccProperties(Nod, Mod, Ac);
     else if(!Module.empty()) //it is a module
@@ -512,7 +512,7 @@ std::string Client_Main::getProperty(std::string Node, std::string Module, std::
     return retval;
 }
 
-std::string Client_Main::getPropertyHelper(const nlohmann::json &props, const std::string &key)
+std::string Client_Main::getPropertyHelper(const SECoP_json &props, const std::string &key)
 {
     std::string Prop;
     if(key!="datainfo")
@@ -531,7 +531,7 @@ std::string Client_Main::getPropertyHelper(const nlohmann::json &props, const st
                     Prop="SECoPError JSON property is undefined";
                     break;
                 default:
-                    Prop = props[key].dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+                    Prop = props[key].dump(-1, ' ', false, SECoP_json::error_handler_t::replace);
                     break;
             }
         }
@@ -541,7 +541,7 @@ std::string Client_Main::getPropertyHelper(const nlohmann::json &props, const st
       //{"type":"tuple","members":[{"type":"enum","members":{"BUSY":300,"ERROR":400,"IDLE":100,"NOTHING":0,"PAUSE":101,"UNKNOWN":-1,"UNSTABLE":250,"WARN":200}},{"type":"string"}]}
       //{"type":"double"}
         if(props[key].is_object())
-            Prop = props[key].dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+            Prop = props[key].dump(-1, ' ', false, SECoP_json::error_handler_t::replace);
         if(props[key].is_string())
         {
             //Prop=props[key].get<std::string>();
@@ -760,12 +760,12 @@ std::list<std::string> SHALL_EXPORT splitSECoPTriple(std::string Triple) //Tripl
     }
     std::list<std::string> retlst;
     std::string tmp;
-    nlohmann::json doc;
+    SECoP_json doc;
     try
     {
-        doc = nlohmann::json::parse(Triple);
+        doc = SECoP_json::parse(Triple);
     }
-    catch (nlohmann::json::exception&)
+    catch (SECoP_json::exception&)
     {
     }
     catch (...)
@@ -778,14 +778,14 @@ std::list<std::string> SHALL_EXPORT splitSECoPTriple(std::string Triple) //Tripl
         retlst.push_back(tmp);
         if (doc.size() >= 2 && doc[1].is_object())
         {
-            const nlohmann::json &qjo(doc[1]);
+            const SECoP_json &qjo(doc[1]);
             const char* aItems[2] = { "t", "e" };
             for (int i = 0; i < 2; ++i)
             {
                 tmp.clear();
                 if (qjo.contains(aItems[i]))
                 {
-                    const nlohmann::json &v(qjo[aItems[i]]);
+                    const SECoP_json &v(qjo[aItems[i]]);
                     if (v.is_string())
                         tmp = v.get<std::string>();
                 }

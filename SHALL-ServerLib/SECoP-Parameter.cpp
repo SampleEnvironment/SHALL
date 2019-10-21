@@ -38,7 +38,9 @@ SECoP_S_Parameter::SECoP_S_Parameter(QString szParameterID, bool bWritable, SECo
     , m_iPollTime(0)
 {
     Q_ASSERT(pParent != nullptr);
+    addPropertyInternal("datainfo", SECoP_dataPtr(), true);
     addPropertyInternal("description", CSECoPbaseType::simpleString("parameter without description"), true);
+    addPropertyInternal("readonly", CSECoPbaseType::simpleBool(false), true);
 }
 
 /**
@@ -128,7 +130,7 @@ enum SECoP_S_error SECoP_S_Parameter::addPropertyInternal(QString szKey, const S
     {
         // convert data type description to value
         CSECoPstring* pString(dynamic_cast<CSECoPstring*>(const_cast<CSECoPbaseType*>(pTmpValue)));
-        nlohmann::json j;
+        SECoP_json j;
         if (pString != nullptr)
         {
             pData = CSECoPbaseType::createSECoP(pString->getValue().constData(), false);
@@ -145,7 +147,7 @@ enum SECoP_S_error SECoP_S_Parameter::addPropertyInternal(QString szKey, const S
         pString = new CSECoPstring(SECoP_VT_JSON);
         if (pString == nullptr)
             return SECoP_S_ERROR_NO_MEMORY;
-        pString->setValue(QByteArray::fromStdString(j.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace)));
+        pString->setValue(QByteArray::fromStdString(j.dump(-1, ' ', false, SECoP_json::error_handler_t::replace)));
         pNewValue = SECoP_dataPtr(pString);
     }
     else if (szKey.compare("pollinterval", Qt::CaseInsensitive) == 0)
@@ -191,13 +193,14 @@ enum SECoP_S_error SECoP_S_Parameter::addPropertyInternal(QString szKey, const S
         }
         else
         {
-            if (propertyPosition(QString("datainfo")) < 0)
+            int iPos(propertyPosition(QString("datainfo")));
+            if (iPos < 0 || m_apProperties[iPos]->isAuto())
             {
                 CSECoPstring* pString(new CSECoPstring(SECoP_VT_JSON));
                 if (pString == nullptr)
                     return SECoP_S_ERROR_NO_MEMORY;
                 pString->setValue(QByteArray::fromStdString(pTmpValue->exportType().
-                                  dump(-1, ' ', false, nlohmann::json::error_handler_t::replace)));
+                                  dump(-1, ' ', false, SECoP_json::error_handler_t::replace)));
                 enum SECoP_S_error iTmpResult(addPropertyInternal("datainfo", SECoP_dataPtr(pString), true));
                 if (iTmpResult < 0)
                     return SECoP_S_ERROR_MISSING_MANDATORY;
@@ -212,7 +215,7 @@ enum SECoP_S_error SECoP_S_Parameter::addPropertyInternal(QString szKey, const S
     SECoP_S_Property* pProperty(nullptr);
     if (iPos >= 0)
     {
-        if (!m_apProperties[iPos]->setValue(pNewValue.get() != nullptr ? pNewValue : pValue))
+        if (!m_apProperties[iPos]->setValue(pNewValue.get() != nullptr ? pNewValue : pValue, bAutomatic))
             iResult = SECoP_S_ERROR_NAME_ALREADY_USED;
         else
             pProperty = m_apProperties[iPos];

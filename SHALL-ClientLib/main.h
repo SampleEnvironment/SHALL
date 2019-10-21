@@ -44,7 +44,7 @@ public:
     std::list<std::string> getAccPropertiesKeyList(std::string Node, std::string Module, std::string Acc);
 
     std::string getProperty(std::string Node, std::string Module, std::string Acc, std::string Key);
-    std::string getPropertyHelper(const nlohmann::json &props, const std::string &key);
+    std::string getPropertyHelper(const SECoP_json &props, const std::string &key);
     std::string  readParam(std::string Node, std::string Module, std::string ParamName, SECoP_dataPtr &Value, double &dTimestamp, SECoP_dataPtr &ErrorVal);
     std::string writeParam(std::string Node, std::string Module, std::string ParamName, SECoP_dataPtr Value);
 

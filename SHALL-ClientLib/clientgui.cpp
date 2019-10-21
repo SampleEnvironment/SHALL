@@ -457,7 +457,7 @@ void ClientGui::readTcpDatastream(NodeConnection* pConnection)
         qDebug().nospace() << "recv: " << szText;
         int iPos(szText.indexOf(' '));
         QString szAction, szSpecifier;
-        nlohmann::json vJsonValue;
+        SECoP_json vJsonValue;
         if (iPos >= 0)
         {
             szAction = szText.left(iPos);
@@ -467,9 +467,9 @@ void ClientGui::readTcpDatastream(NodeConnection* pConnection)
                 szSpecifier = szText.mid(iPos + 1, iPos2 - iPos - 1);
                 try
                 {
-                    vJsonValue = nlohmann::json::parse(szText.mid(iPos2 + 1).toStdString());
+                    vJsonValue = SECoP_json::parse(szText.mid(iPos2 + 1).toStdString());
                 }
-                catch (nlohmann::json::exception& e)
+                catch (SECoP_json::exception& e)
                 {
                     qDebug().nospace() << "got json exception " << e.what();
                 }
@@ -519,7 +519,7 @@ void ClientGui::readTcpDatastream(NodeConnection* pConnection)
                         if (h.contains(szSpecifier))
                         {
                             SECoP_dataPtr newval(h[szSpecifier].pValueOrArg->duplicate());
-                            nlohmann::json vJsonQualifier;
+                            SECoP_json vJsonQualifier;
 
                             if (vJsonValue.is_array() && vJsonValue.size() >= 2 && vJsonValue[1].is_object())
                             {
@@ -541,7 +541,7 @@ void ClientGui::readTcpDatastream(NodeConnection* pConnection)
                             h[szSpecifier].init=false;
                             if (vJsonQualifier.contains("t"))
                             {
-                                nlohmann::json vTimestamp(vJsonQualifier["t"]);
+                                SECoP_json vTimestamp(vJsonQualifier["t"]);
                                 if (vTimestamp.is_number_float())
                                     h[szSpecifier].timestamp = vTimestamp.get<double>();
                                 else if (vTimestamp.is_number_integer())
@@ -592,7 +592,7 @@ void ClientGui::readTcpDatastream(NodeConnection* pConnection)
                         if (h.contains(szSpecifier))
                         {
                             SECoP_dataPtr newval(h[szSpecifier].pValueOrArg->duplicate());
-                            nlohmann::json vJsonQualifier;
+                            SECoP_json vJsonQualifier;
 
                             if (vJsonValue.is_array() && vJsonValue.size() >= 2 && vJsonValue[1].is_object())
                             {
@@ -614,7 +614,7 @@ void ClientGui::readTcpDatastream(NodeConnection* pConnection)
                             h[szSpecifier].init=false;
                             if (vJsonQualifier.contains("t"))
                             {
-                                nlohmann::json vTimestamp(vJsonQualifier["t"]);
+                                SECoP_json vTimestamp(vJsonQualifier["t"]);
                                 if (vTimestamp.is_number_float())
                                     h[szSpecifier].timestamp = vTimestamp.get<double>();
                                 else if (vTimestamp.is_number_integer())
@@ -1295,7 +1295,7 @@ int ClientGui::getNumberOfModules(QString NodeName)
  * \param[in] Node node name
  * \return JSON with properties
  */
-nlohmann::json ClientGui::getNodeProperties(QString Node)
+SECoP_json ClientGui::getNodeProperties(QString Node)
 {
     return ConnectedNodesHash[Node][":"].properties;
 }
@@ -1306,7 +1306,7 @@ nlohmann::json ClientGui::getNodeProperties(QString Node)
  * \param[in] Module module name
  * \return JSON with properties
  */
-nlohmann::json ClientGui::getModuleProperties(QString Node, QString Module)
+SECoP_json ClientGui::getModuleProperties(QString Node, QString Module)
 {
     return ConnectedNodesHash[Node][Module+":"].properties;
 }
@@ -1318,7 +1318,7 @@ nlohmann::json ClientGui::getModuleProperties(QString Node, QString Module)
  * \param[in] Acc    accessible name
  * \return JSON with properties
  */
-nlohmann::json ClientGui::getAccProperties(QString Node, QString Module, QString Acc)
+SECoP_json ClientGui::getAccProperties(QString Node, QString Module, QString Acc)
 {
     return ConnectedNodesHash[Node][Module+":"+Acc].properties;
 }
@@ -1389,7 +1389,7 @@ void ClientGui::addModulesToTree(QTreeWidgetItem* ptrTreeParent, QString Node, Q
     QStringList acc(getAccNameList(Node,mod));
     for (int i = 0; i < acc.size(); ++i)
     {
-        nlohmann::json qjoProp(getAccProperties(Node, mod, acc.at(i)));
+        SECoP_json qjoProp(getAccProperties(Node, mod, acc.at(i)));
         if (qjoProp.contains("readonly"))
         {
             bool b(false);
@@ -1546,14 +1546,14 @@ void ClientGui::showItem(QTreeWidgetItem* ptrToItem)
        g_actualNode = node;
        QString module(ptrToItem->parent()->text(0));
        QString acc(ptrToItem->text(0));
-       MSG = QString::fromStdString(getAccProperties(node, module, acc).dump(2, ' ', false, nlohmann::json::error_handler_t::replace));
+       MSG = QString::fromStdString(getAccProperties(node, module, acc).dump(2, ' ', false, SECoP_json::error_handler_t::replace));
    }
    else if (!ptrToItem->parent())//is a node
    {
        g_actualItem = "node";
        QString node(ptrToItem->text(0));
        g_actualNode = node;
-       MSG = QString::fromStdString(getNodeProperties(node).dump(2, ' ', false, nlohmann::json::error_handler_t::replace));
+       MSG = QString::fromStdString(getNodeProperties(node).dump(2, ' ', false, SECoP_json::error_handler_t::replace));
    }
    else //is a module; it has a parent and it has childs (a module is at least readable so value as parameter must exist)
    {
@@ -1561,7 +1561,7 @@ void ClientGui::showItem(QTreeWidgetItem* ptrToItem)
        QString node(ptrToItem->parent()->text(0));
        g_actualNode = node;
        QString mod(ptrToItem->text(0));
-       MSG = QString::fromStdString(getModuleProperties(node, mod).dump(2, ' ', false, nlohmann::json::error_handler_t::replace));
+       MSG = QString::fromStdString(getModuleProperties(node, mod).dump(2, ' ', false, SECoP_json::error_handler_t::replace));
        //showModuleToTab(mod);
        switchShownTab(node, mod);
    }
@@ -1853,7 +1853,7 @@ QWidget* ClientGui::createModuleTabs(QString node, QString module)
 
 
 
-            nlohmann::json qjoacc(getAccProperties(g_actualNode, module, acc));
+            SECoP_json qjoacc(getAccProperties(g_actualNode, module, acc));
             if (qjoacc.contains("readonly"))
             {
                 bool b(false);
@@ -1968,9 +1968,9 @@ void ClientGui::buildStructure(NodeConnection* pConnection, QByteArray &szText)
     szText.remove(0, i+1);
     try
     {
-        JSONdoc = nlohmann::json::parse(szText.toStdString());
+        JSONdoc = SECoP_json::parse(szText.toStdString());
     }
-    catch (nlohmann::json::exception&)
+    catch (SECoP_json::exception&)
     {
         JSONdoc.clear();
     }
@@ -1980,7 +1980,7 @@ void ClientGui::buildStructure(NodeConnection* pConnection, QByteArray &szText)
     }
     if (JSONdoc.is_object() && JSONdoc.contains("equipment_id"))
     {
-        const nlohmann::json &v(JSONdoc["equipment_id"]);
+        const SECoP_json &v(JSONdoc["equipment_id"]);
         if (v.is_string())
         {
             QString s(QString::fromStdString(v.get<std::string>()));
@@ -2011,14 +2011,14 @@ void ClientGui::buildStructure(NodeConnection* pConnection, QByteArray &szText)
         QString modname = QString::fromStdString(mods.key());
         ListOfModules.append(modname);
         mods.value();
-        nlohmann::json j_objectAccessibles = mods.value()["accessibles"];
+        SECoP_json j_objectAccessibles = mods.value()["accessibles"];
         QStringList ListOfAccessibles;
         for (auto accs = j_objectAccessibles.begin(); accs != j_objectAccessibles.end(); ++accs)
         {
             NodeStructureItem accessibleItem;
             QString accname=QString::fromStdString(accs.key());
             ListOfAccessibles.append(accname);
-            nlohmann::json acc = accs.value();
+            SECoP_json acc = accs.value();
 
             accessibleItem.gpos = 0;
             accessibleItem.init = true; //still initial value
@@ -2142,7 +2142,7 @@ void ClientGui::buildStructure(NodeConnection* pConnection, QByteArray &szText)
             NodeStructureItem value;
 
 //set properties
-            nlohmann::json o(getAccPropertiesFromJSON(ModNames[i],AccNames[j]));
+            SECoP_json o(getAccPropertiesFromJSON(ModNames[i],AccNames[j]));
             if (o.is_object())
                 value.properties = o; //cast json document to json object if it is not object the something was wrong with the descriptive JSON or the descriptive JSON deconstruction
             else
@@ -2372,14 +2372,14 @@ std::string ClientGui::getUnit(const CSECoPbaseType* pValue)
     const CSECoPtuple*   pTuple  (dynamic_cast<const CSECoPtuple*>  (pValue));
     const CSECoParray*   pArray  (dynamic_cast<const CSECoParray*>  (pValue));
     const CSECoPcommand* pCommand(dynamic_cast<const CSECoPcommand*>(pValue));
-    nlohmann::json o;
+    SECoP_json o;
     if (pStruct != nullptr)
     {
         if (pStruct->getItemCount() < 1)
             return std::string();
         for (unsigned int i = 0; i < pStruct->getItemCount(); ++i)
             o[pStruct->getItemName(i).toStdString()] = getUnit(pStruct->getItem(i));
-        return o.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return o.dump(-1, ' ', false, SECoP_json::error_handler_t::replace);
     }
     if (pTuple != nullptr)
     {
@@ -2387,7 +2387,7 @@ std::string ClientGui::getUnit(const CSECoPbaseType* pValue)
             return std::string();
         for (unsigned int i = 0; i < pTuple->getSize(); ++i)
             o.push_back(getUnit(pTuple->getValue(i)));
-        return o.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return o.dump(-1, ' ', false, SECoP_json::error_handler_t::replace);
     }
     if (pArray != nullptr)
     {
@@ -2395,7 +2395,7 @@ std::string ClientGui::getUnit(const CSECoPbaseType* pValue)
             return std::string();
         for (unsigned int i = 0; i < pArray->getSize(); ++i)
             o.push_back(getUnit(pArray->getValue(i)));
-        return o.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return o.dump(-1, ' ', false, SECoP_json::error_handler_t::replace);
     }
     if (pCommand != nullptr)
     {
@@ -2407,7 +2407,7 @@ std::string ClientGui::getUnit(const CSECoPbaseType* pValue)
             o["result"] = szRes;
         if (o.empty())
             return std::string();
-        return o.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        return o.dump(-1, ' ', false, SECoP_json::error_handler_t::replace);
     }
     o = pValue->additional();
     if (o.contains("unit") && o["unit"].is_string())

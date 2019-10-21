@@ -51,6 +51,24 @@ bool SECoP_S_Property::setValue(const SECoP_dataPtr pValue)
         return false;
 }
 
+/**
+ * \brief Set/overwrite the value of a property and set the automatic/
+ *        overwritable flag.
+ * \param[in] pValue new value
+ * \return true: successful, false: the property was not automatic/overwritable
+ */
+bool SECoP_S_Property::setValue(const SECoP_dataPtr pValue, bool bAutomatic)
+{
+    if (m_bAutomatic)
+    {
+        m_pValue     = pValue;
+        m_bAutomatic = bAutomatic;
+        return true;
+    }
+    else
+        return false;
+}
+
 /// \returns the name of the property
 QString SECoP_S_Property::getKey() const
 {

@@ -43,7 +43,7 @@ public:
     enum SECoP_S_error addProperty(QString szKey, const SECoP_dataPtr pValue);
     enum SECoP_S_error setAddFocus(QString szKey);
     enum SECoP_S_error nodeComplete();
-    nlohmann::json getJSON() const;
+    SECoP_json getJSON() const;
     QString getErrors() const;
     QString getActiveModuleName() const;
     QString getNodeID() const;
@@ -87,7 +87,7 @@ private:
     /// the list of modules inside the node
     QVector<SECoP_S_Module*>   m_apModules;
     /// descriptive json for the complete node
-    nlohmann::json             m_szDescribingJSON;
+    SECoP_json             m_szDescribingJSON;
     /// the node id
     QString                    m_szNodeID;
     /// node description text

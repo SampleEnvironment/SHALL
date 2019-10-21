@@ -53,9 +53,9 @@ public:
     QString getNodeID();//returns actual node
     int getNumberOfNodes();
 
-    nlohmann::json getNodeProperties(QString Node);
-    nlohmann::json getModuleProperties(QString Node, QString Module);
-    nlohmann::json getAccProperties(QString Node, QString Module, QString Acc);
+    SECoP_json getNodeProperties(QString Node);
+    SECoP_json getModuleProperties(QString Node, QString Module);
+    SECoP_json getAccProperties(QString Node, QString Module, QString Acc);
 
     QStringList getNodeNamesList();
     QStringList getNodePropertiesKeyList();
@@ -154,7 +154,7 @@ private:
         QString group;                              //only used for modules and accessibles
         int gpos=0;                                 //0 if no group is given is intended to give an preferred order in groupings not decided yet if needed
         QString unit;                               //only used for parameters
-        nlohmann::json properties;                     //used for nodes/modules and accessibles
+        SECoP_json properties;                     //used for nodes/modules and accessibles
         QStringList ContentList;                    //used only by node or module
         QString value;                              //value as string soon obsolete
         bool init=true;                             //maybe as indicator if an parameter has still its init value something the watchdog can scan for true means still init value
@@ -182,9 +182,9 @@ private:
 
     QString g_actualNode = nullptr;//used for gui
     QString g_actualItem = nullptr;
-    nlohmann::json JSONdoc;
-    nlohmann::json qjoNodeProps;
-    nlohmann::json qjoMods;
+    SECoP_json JSONdoc;
+    SECoP_json qjoNodeProps;
+    SECoP_json qjoMods;
     bool connected = false;
     int static_tabs = 5;//tabs that are always shown console, info, log, errorlog and module the additional tabs are shown if grouping on parameter is used
     int module_tab = 4;

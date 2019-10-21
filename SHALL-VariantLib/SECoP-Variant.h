@@ -121,6 +121,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 
 #ifdef __cplusplus
 #include "json.hpp"
+#include <cctype>
 extern "C"
 {
 #endif
@@ -714,7 +715,748 @@ double SHALL_EXPORT SECoP_V_getAdditionalDouble(const CSECoPbaseType* pData, uns
 long long SHALL_EXPORT SECoP_V_getAdditionalInteger(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex);
 
 #ifdef __cplusplus
-}
+} // end: extern "C"
+
+/**
+ * \brief SECoPordered_map is a sorted list where the elements are in the order
+ *        they were added. The interface is in parts compatible to the std::map
+ *        or std::unordered_map, which is used for \ref nlohmann::json objects.
+ *        The difference is, the _Compare class is not used, because the order
+ *        depends on the time, when elements are added or removed. That's why
+ *        the accessors lower_bound, upper_bound and equal_range are not
+ *        included, but rest should be C++11.
+ */
+template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>,
+          typename _Alloc = std::allocator<std::pair<const _Key, _Tp> > >
+class SECoPordered_map
+{
+public:
+    typedef _Key                           key_type;
+    typedef _Tp                            mapped_type;
+    typedef std::pair<const key_type, _Tp> value_type;
+
+    class value_compare : public std::binary_function<value_type, value_type, bool>
+    {
+        friend class SECoPordered_map<_Key, _Tp, _Compare, _Alloc>;
+    protected:
+        _Compare comp;
+        value_compare(_Compare __c) : comp(__c) { }
+    public:
+        bool operator()(const value_type& __x, const value_type& __y) const
+            { return comp(__x.first, __y.first); }
+    };
+
+private:
+    typedef std::vector<std::pair<key_type, _Tp>> storage_type;
+
+    storage_type _v;
+
+public:
+    typedef typename storage_type::iterator               iterator;
+    typedef typename storage_type::const_iterator         const_iterator;
+    typedef typename storage_type::size_type              size_type;
+    typedef typename storage_type::difference_type        difference_type;
+    typedef typename storage_type::reverse_iterator       reverse_iterator;
+    typedef typename storage_type::const_reverse_iterator const_reverse_iterator;
+
+    /// \brief  Default constructor creates no elements.
+    SECoPordered_map() = default;
+
+    /**
+     *  \brief  Creates a %SECoPordered_map with no elements.
+     *  \param  __c  A comparison object (ignored).
+     *  \param  __a  An allocator object.
+     */
+    explicit SECoPordered_map(const _Compare&, const _Alloc& __a = _Alloc())
+        : _v(__a) {}
+
+    /// \brief  %SECoPordered_map copy constructor.
+    SECoPordered_map(const SECoPordered_map&) = default;
+
+    /**
+     *  \brief  %SECoPordered_map move constructor.
+     *
+     *  The newly-created %SECoPordered_map contains the exact contents of the
+     *  moved instance. The moved instance is a valid, but unspecified,
+     *  %SECoPordered_map.
+     */
+    SECoPordered_map(SECoPordered_map&&) = default;
+
+    /**
+     *  \brief  Builds a %SECoPordered_map from an initializer_list.
+     *  \param  __l  An initializer_list.
+     *  \param  __c  A comparison object (ignored).
+     *  \param  __a  An allocator object.
+     *
+     *  Create a %SECoPordered_map consisting of copies of the elements in the
+     *  initializer_list \a __l.
+     */
+    SECoPordered_map(std::initializer_list<value_type> __l, const _Compare&
+                     = _Compare(), const _Alloc& __a = _Alloc())
+        : _v(__a) { insert(__l); }
+
+    /// Allocator-extended default constructor.
+    explicit SECoPordered_map(const _Alloc& __a) : _v(__a) { }
+
+    /// Allocator-extended copy constructor.
+    SECoPordered_map(const SECoPordered_map& __m, const _Alloc& __a)
+        : _v(__m._v, __a) { }
+
+    /// Allocator-extended move constructor.
+    SECoPordered_map(SECoPordered_map&& __m, const _Alloc& __a)
+        : _v(std::move(__m._v), __a) { }
+
+    /// Allocator-extended initialier-list constructor.
+    SECoPordered_map(std::initializer_list<value_type> __l, const _Alloc& __a)
+        : _v(__a) { insert(__l); }
+
+    /// Allocator-extended range constructor.
+    template<typename _InputIterator> SECoPordered_map(_InputIterator __first,
+        _InputIterator __last, const _Alloc& __a)
+        : _v(__a) { insert(__first, __last); }
+
+    /**
+     *  \brief  Builds a %SECoPordered_map from a range.
+     *  \param  __first  An input iterator.
+     *  \param  __last  An input iterator.
+     *
+     *  Create a %SECoPordered_map consisting of copies of the elements from
+     *  [__first,__last).
+     */
+    template<typename _InputIterator> SECoPordered_map(_InputIterator __first,
+        _InputIterator __last) : _v() { insert(__first, __last); }
+
+    /**
+     *  \brief  Builds a %SECoPordered_map from a range.
+     *  \param  __first  An input iterator.
+     *  \param  __last  An input iterator.
+     *  \param  __c  A comparison functor (ignored).
+     *  \param  __a  An allocator object.
+     *
+     *  Create a %SECoPordered_map consisting of copies of the elements from
+     *  [__first,__last).
+     */
+    template<typename _InputIterator> SECoPordered_map(_InputIterator __first,
+        _InputIterator __last, const _Compare&, const _Alloc& __a = _Alloc())
+        : _v(__a) { insert(__first, __last); }
+
+    /**
+     *  The dtor only erases the elements, and note that if the elements
+     *  themselves are pointers, the pointed-to memory is not touched in any
+     *  way. Managing the pointer is the user's responsibility.
+     */
+    ~SECoPordered_map() = default;
+
+    /**
+     *  \brief  %SECoPordered_map assignment operator.
+     *
+     *  Whether the allocator is copied depends on the allocator traits.
+     */
+    SECoPordered_map& operator=(const SECoPordered_map&) = default;
+
+    /// Move assignment operator.
+    SECoPordered_map& operator=(SECoPordered_map&&) = default;
+
+    /**
+     *  \brief  %SECoPordered_map list assignment operator.
+     *  \param  __l  An initializer_list.
+     *
+     *  This function fills a %SECoPordered_map with copies of the elements
+     *  in the initializer list \a __l.
+     *
+     *  Note that the assignment completely changes the %SECoPordered_map and
+     *  that the resulting %SECoPordered_map's size is the same as the number
+     *  of elements assigned.
+     */
+    SECoPordered_map& operator=(std::initializer_list<value_type> __l)
+        { _v.clear(); insert(__l); return *this; }
+
+    /// Get a copy of the memory allocation object.
+    _Alloc get_allocator() const { return _Alloc(_v.get_allocator()); }
+
+    // iterators
+    /**
+     *  Returns a read/write iterator that points to the first pair in the
+     *  %SECoPordered_map. Iteration is done in ascending order according to
+     *  the keys.
+     */
+    iterator begin() { return _v.begin(); }
+
+    /**
+     *  Returns a read-only (constant) iterator that points to the first pair
+     *  in the %SECoPordered_map. Iteration is done in ascending order
+     *  according to the keys.
+     */
+    const_iterator begin() const { return _v.begin(); }
+
+    /**
+     *  Returns a read/write iterator that points one past the last pair in
+     *  the %SECoPordered_map. Iteration is done in ascending order according
+     *  to the keys.
+     */
+    iterator end() { return _v.end(); }
+
+    /**
+     *  Returns a read-only (constant) iterator that points one past the last
+     *  pair in the %SECoPordered_map. Iteration is done in ascending order
+     *  according to the keys.
+     */
+    const_iterator end() const { return _v.end(); }
+
+    /**
+     *  Returns a read/write reverse iterator that points to the last pair in
+     *  the %SECoPordered_map. Iteration is done in descending order according
+     *  to the keys.
+     */
+    reverse_iterator rbegin() { return _v.rbegin(); }
+
+    /**
+     *  Returns a read-only (constant) reverse iterator that points to the
+     *  last pair in the %SECoPordered_map. Iteration is done in descending
+     *  order according to the keys.
+     */
+    const_reverse_iterator rbegin() const { return _v.rbegin(); }
+
+    /**
+     *  Returns a read/write reverse iterator that points to one before the
+     *  first pair in the %SECoPordered_map. Iteration is done in descending
+     *  order according to the keys.
+     */
+    reverse_iterator rend() { return _v.rend(); }
+
+    /**
+     *  Returns a read-only (constant) reverse iterator that points to one
+     *  before the first pair in the %SECoPordered_map. Iteration is done in
+     *  descending order according to the keys.
+     */
+    const_reverse_iterator rend() const { return _v.rend(); }
+
+    /**
+     *  Returns a read-only (constant) iterator that points to the first pair
+     *  in the %SECoPordered_map. Iteration is done in ascending order
+     *  according to the keys.
+     */
+    const_iterator cbegin() const noexcept { return _v.begin(); }
+
+    /**
+     *  Returns a read-only (constant) iterator that points one past the last
+     *  pair in the %SECoPordered_map. Iteration is done in ascending order
+     *  according to the keys.
+     */
+    const_iterator cend() const noexcept { return _v.end(); }
+
+    /**
+     *  Returns a read-only (constant) reverse iterator that points to the
+     *  last pair in the %SECoPordered_map.  Iteration is done in descending
+     *  order according to the keys.
+     */
+    const_reverse_iterator crbegin() const noexcept { return _v.rbegin(); }
+
+    /**
+     *  Returns a read-only (constant) reverse iterator that points to one
+     *  before the first pair in the %SECoPordered_map. Iteration is done in
+     *  descending order according to the keys.
+     */
+    const_reverse_iterator crend() const noexcept { return _v.rend(); }
+
+    // capacity
+    /// Returns true if the %SECoPordered_map is empty.
+    bool empty() const { return _v.empty(); }
+
+    /// Returns the size of the %SECoPordered_map.
+    size_type size() const { return _v.size(); }
+
+    /// Returns the maximum size of the %SECoPordered_map.
+    size_type max_size() const { return _v.max_size(); }
+
+    /**
+     *  \brief  Subscript ( \c [] ) access to %SECoPordered_map data.
+     *  \param  __k  The key for which data should be retrieved.
+     *  \return A reference to the data of the (key,data) %pair.
+     *
+     *  Allows for easy lookup with the subscript ( \c [] ) operator. Returns
+     *  data associated with the key specified in subscript. If the key does
+     *  not exist, a pair with that key is created using default values, which
+     *  is then returned. Lookup requires linear time.
+     */
+    mapped_type& operator[](const key_type& __k)
+    {
+        for (auto &it : _v)
+            if (_SECoPkey_compareequal(__k, it.first))
+                return it.second;
+        _v.emplace_back(value_type(__k, mapped_type()));
+        return _v.back().second;
+    }
+
+    /**
+     *  \brief  Subscript ( \c [] ) access to %SECoPordered_map data.
+     *  \param  __k  The key for which data should be retrieved.
+     *  \return A reference to the data of the (key,data) %pair.
+     *
+     *  Allows for easy lookup with the subscript ( \c [] ) operator. Returns
+     *  data associated with the key specified in subscript. If the key does
+     *  not exist, a pair with that key is created using default values, which
+     *  is then returned. Lookup requires linear time.
+     */
+    mapped_type& operator[](key_type&& __k)
+    {
+        for (auto &it : _v)
+            if (_SECoPkey_compareequal(__k, it.first))
+                return it.second;
+        _v.emplace_back(value_type(__k, mapped_type()));
+        return _v.back().second;
+    }
+
+    /**
+     *  \brief  Access to %SECoPordered_map data.
+     *  \param  __k  The key for which data should be retrieved.
+     *  \return A reference to the data whose key is equivalent to \a __k,
+     *          if such a data is present in the %SECoPordered_map.
+     *  \throw  std::out_of_range  If no such data is present.
+     */
+    mapped_type& at(const key_type& __k)
+    {
+        for (auto &it : _v)
+            if (_SECoPkey_compareequal(__k, it.first))
+                return it.second;
+        std::__throw_out_of_range(__N("SECoPordered_map::at"));
+        return _v.back().second;
+    }
+
+    /**
+     *  \brief  Access to %SECoPordered_map data.
+     *  \param  __k  The key for which data should be retrieved.
+     *  \return A reference to the data whose key is equivalent to \a __k,
+     *          if such a data is present in the %SECoPordered_map.
+     *  \throw  std::out_of_range  If no such data is present.
+     */
+    const mapped_type& at(const key_type& __k) const
+    {
+        for (auto &it : _v)
+            if (_SECoPkey_compareequal(__k, it.first))
+                return it.second;
+        std::__throw_out_of_range(__N("SECoPordered_map::at"));
+        return _v.back().second;
+    }
+
+    /**
+     *  \brief  Attempts to build and insert a std::pair into the
+     *          %SECoPordered_map.
+     *  \param  __args  Arguments used to generate a new pair instance.
+     *  \return A pair, of which the first element is an iterator that points
+     *          to the possibly inserted pair, and the second is a bool that
+     *          is true if the pair was actually inserted.
+     *
+     *  This function attempts to build and insert a (key, value) %pair into
+     *  the %SECoPordered_map. A %SECoPordered_map relies on unique keys and
+     *  thus a %pair is only inserted if its first element (the key) is not
+     *  already present in the %SECoPordered_map. Insertion requires linear time.
+     */
+    template<class... _Args> std::pair<iterator, bool> emplace(
+            _Args&& ... __args)
+    {
+        for (iterator it = _v.begin(); it != _v.end(); ++it)
+            if (_SECoPkey_compareequal(value_type(__args...).first, it->first))
+                return std::pair<iterator, bool>(it, false);
+        _v.emplace_back(std::forward<_Args>(__args)...);
+        return std::pair<iterator, bool>(_v.end() - 1, true);
+    }
+
+    /**
+     *  \brief Attempts to build and insert a std::pair into the
+     *         %SECoPordered_map.
+     *  \param  __pos   An iterator that serves as a hint as to where the pair
+     *                  should be inserted (ignored).
+     *  \param  __args  Arguments used to generate a new pair instance (see
+     *                  std::piecewise_contruct for passing arguments to each
+     *                  part of the pair constructor).
+     *  \return An iterator that points to the element with key of the
+     *          std::pair built from \a __args (may or may not be that
+     *          std::pair).
+     *
+     *  This function is not concerned about whether the insertion took place,
+     *  and thus does not return a boolean like the single-argument emplace()
+     *  does. Insertion requires linear time.
+     */
+    template<class... _Args> iterator emplace_hint(const_iterator,
+        _Args&& ... __args) { return emplace(std::forward<_Args>(__args)...); }
+
+    /**
+     *  \brief  Attempts to insert a std::pair into the %SECoPordered_map.
+     *  \param  __x Pair to be inserted (see std::make_pair for easy creation
+     *              of pairs).
+     *  \return A pair, of which the first element is an iterator that points
+     *          to the possibly inserted pair, and the second is a bool that
+     *          is true if the pair was actually inserted.
+     *
+     *  This function attempts to insert a (key, value) %pair into the
+     *  %SECoPordered_map. A %SECoPordered_map relies on unique keys and thus
+     *  a %pair is only inserted if its first element (the key) is not already
+     *  present in the %SECoPordered_map. Insertion requires linear time.
+     */
+    std::pair<iterator, bool> insert(const value_type& __x)
+    {
+        for (iterator it = _v.begin(); it != _v.end(); ++it)
+        {
+            if (_SECoPkey_compareequal(__x.first, it->first))
+            {
+                it->second = __x.second;
+                return std::pair<iterator,bool>(it, false);
+            }
+        }
+        _v.emplace_back(__x);
+        return std::pair<iterator,bool>(_v.end() - 1, true);
+    }
+
+    /**
+     *  \brief  Attempts to insert a std::pair into the %SECoPordered_map.
+     *  \param  __x Pair to be inserted (see std::make_pair for easy creation
+     *              of pairs).
+     *  \return A pair, of which the first element is an iterator that points
+     *          to the possibly inserted pair, and the second is a bool that
+     *          is true if the pair was actually inserted.
+     *
+     *  This function attempts to insert a (key, value) %pair into the
+     *  %SECoPordered_map. A %SECoPordered_map relies on unique keys and thus
+     *  a %pair is only inserted if its first element (the key) is not already
+     *  present in the %SECoPordered_map. Insertion requires linear time.
+     */
+    std::pair<iterator, bool> insert(value_type&& __x)
+    {
+        for (iterator it = _v.begin(); it != _v.end(); ++it)
+        {
+            if (_SECoPkey_compareequal(__x.first, it->first))
+            {
+                it->second = std::forward<mapped_type>(__x.second);
+                return std::pair<iterator,bool>(it, false);
+            }
+        }
+        _v.emplace_back(std::forward<value_type>(__x));
+        return std::pair<iterator,bool>(_v.end() - 1, true);
+    }
+
+    /**
+     *  \brief Attempts to insert a list of std::pairs into the
+     *         %SECoPordered_map.
+     *  \param __list  A std::initializer_list<value_type> of pairs to be
+     *                 inserted.
+     */
+    void insert(std::initializer_list<value_type> __list)
+        { insert(__list.begin(), __list.end()); }
+
+    /**
+     *  \brief Attempts to insert a std::pair into the %SECoPordered_map.
+     *  \param  __position An iterator that serves as a hint as to where the
+     *                     pair should be inserted (ignored).
+     *  \param  __x Pair to be inserted (see std::make_pair for easy creation
+     *              of pairs).
+     *  \return An iterator that points to the element with key of
+     *          \a __x (may or may not be the %pair passed in).
+     *
+     *  This function is not concerned about whether the insertion took place,
+     *  and thus does not return a boolean like the single-argument insert()
+     *  does. Insertion requires linear time.
+     */
+    iterator insert(const_iterator, const value_type& __x)
+        { return insert(std::forward<value_type>(__x)).first; }
+
+    /**
+     *  \brief Attempts to insert a std::pair into the %SECoPordered_map.
+     *  \param  __position An iterator that serves as a hint as to where the
+     *                     pair should be inserted (ignored).
+     *  \param  __x Pair to be inserted (see std::make_pair for easy creation
+     *              of pairs).
+     *  \return An iterator that points to the element with key of
+     *          \a __x (may or may not be the %pair passed in).
+     *
+     *  This function is not concerned about whether the insertion took place,
+     *  and thus does not return a boolean like the single-argument insert()
+     *  does. Insertion requires linear time.
+     */
+    iterator insert(const_iterator, value_type&& __x)
+        { return insert(std::forward<value_type>(__x)).first; }
+
+    /**
+     *  \brief Template function that attempts to insert a range of elements.
+     *  \param  __first  Iterator pointing to the start of the range to be
+     *                   inserted.
+     *  \param  __last   Iterator pointing to the end of the range.
+     */
+    template<typename _InputIterator> void insert(_InputIterator __first,
+                                                  _InputIterator __last)
+        { for(_InputIterator it = __first; it != __last; ++it) insert(*it); }
+
+    /**
+     *  \brief Erases an element from a %SECoPordered_map.
+     *  \param  __position  An iterator pointing to the element to be erased.
+     *  \return An iterator pointing to the element immediately following
+     *          \a position prior to the element being erased. If no such
+     *          element exists, end() is returned.
+     *
+     *  This function erases an element, pointed to by the given iterator,
+     *  from a %SECoPordered_map. Note that this function only erases the
+     *  element, and that if the element is itself a pointer, the pointed-to
+     *  memory is not touched in any way. Managing the pointer is the user's
+     *  responsibility.
+     */
+    iterator erase(const_iterator __position) { return _v.erase(__position); }
+
+    /**
+     *  \brief Erases an element from a %SECoPordered_map.
+     *  \param  __position  An iterator pointing to the element to be erased.
+     *  \return An iterator pointing to the element immediately following
+     *          \a position prior to the element being erased. If no such
+     *          element exists, end() is returned.
+     *
+     *  This function erases an element, pointed to by the given iterator,
+     *  from a %SECoPordered_map. Note that this function only erases the
+     *  element, and that if the element is itself a pointer, the pointed-to
+     *  memory is not touched in any way. Managing the pointer is the user's
+     *  responsibility.
+     */
+    iterator erase(iterator __position) { return _v.erase(__position); }
+
+    /**
+     *  \brief Erases elements according to the provided key.
+     *  \param  __x  Key of element to be erased.
+     *  \return  The number of elements erased.
+     *
+     *  This function erases all the elements located by the given key from
+     *  a %SECoPordered_map. Note that this function only erases the element,
+     *  and that if the element is itself a pointer, the pointed-to memory is
+     *  not touched in any way. Managing the pointer is the user's
+     *  responsibility.
+     */
+    size_type erase(const key_type& __x)
+    {
+        for (iterator it = _v.begin(); it != _v.end(); ++it)
+        {
+            if (_SECoPkey_compareequal(__x, it->first))
+            {
+                _v.erase(it);
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     *  \brief Erases a [first,last) range of elements from a %SECoPordered_map.
+     *  \param  __first  Iterator pointing to the start of the range to be
+     *                   erased.
+     *  \param __last Iterator pointing to the end of the range to be erased.
+     *  \return The iterator \a __last.
+     *
+     *  This function erases a sequence of elements from a %SECoPordered_map.
+     *  Note that this function only erases the element, and that if the
+     *  element is itself a pointer, the pointed-to memory is not touched in
+     *  any way. Managing the pointer is the user's responsibility.
+     */
+    iterator erase(const_iterator __first, const_iterator __last)
+        { return _v.erase(__first, __last); }
+
+    /**
+     *  \brief Swaps data with another %SECoPordered_map.
+     *  \param __x A %SECoPordered_map of the same element and allocator types.
+     *
+     *  This exchanges the elements between two maps in constant time. (It is
+     *  only swapping a pointer, an integer, so it should be quite fast.) Note
+     *  that the global std::swap() function is specialized such that
+     *  std::swap(m1,m2) will feed to this function.
+     *
+     *  Whether the allocators are swapped depends on the allocator traits.
+     */
+    void swap(SECoPordered_map& __x) { _v.swap(__x._v); }
+
+    /**
+     *  Erases all elements in a %SECoPordered_map. Note that this function
+     *  only erases the elements, and that if the elements themselves are
+     *  pointers, the pointed-to memory is not touched in any way. Managing
+     *  the pointer is the user's responsibility.
+     */
+    void clear() { _v.clear(); }
+
+    /**
+     *  \brief Tries to locate an element in a %SECoPordered_map.
+     *  \param  __x  Key of (key, value) %pair to be located.
+     *  \return  Iterator pointing to sought-after element, or end() if not
+     *           found.
+     *
+     *  This function takes a key and tries to locate the element with which
+     *  the key matches.  If successful the function returns an iterator
+     *  pointing to the sought after %pair.  If unsuccessful it returns the
+     *  past-the-end ( \c end() ) iterator.
+     */
+    iterator find(const key_type& __x)
+    {
+        for (iterator it = _v.begin(); it != _v.end(); ++it)
+            if (_SECoPkey_compareequal(__x, it->first))
+                return it;
+        return end();
+    }
+
+    /**
+     *  \brief Tries to locate an element in a %SECoPordered_map.
+     *  \param  __x  Key of (key, value) %pair to be located.
+     *  \return  Read-only (constant) iterator pointing to sought-after
+     *           element, or end() if not found.
+     *
+     *  This function takes a key and tries to locate the element with which
+     *  the key matches.  If successful the function returns a constant
+     *  iterator pointing to the sought after %pair. If unsuccessful it
+     *  returns the past-the-end ( \c end() ) iterator.
+     */
+    const_iterator find(const key_type& __x) const
+    {
+        for (const_iterator it = _v.begin(); it != _v.end(); ++it)
+            if (_SECoPkey_compareequal(__x, it->first))
+                return it;
+        return cend();
+    }
+
+    /**
+     *  \brief  Finds the number of elements with given key.
+     *  \param  __x  Key of (key, value) pairs to be located.
+     *  \return  Number of elements with specified key.
+     *
+     *  This function only makes sense for multimaps; for map the result will
+     *  either be 0 (not present) or 1 (present).
+     */
+    size_type count(const key_type& __x) const
+    {
+        for (auto &it : _v)
+            if (_SECoPkey_compareequal(__x, it.first))
+                return 1;
+        return 0;
+    }
+
+    template<typename _K1, typename _T1, typename _C1, typename _A1>
+      friend bool operator==(const SECoPordered_map<_K1, _T1, _C1, _A1>&,
+                             const SECoPordered_map<_K1, _T1, _C1, _A1>&);
+
+    template<typename _K1, typename _T1, typename _C1, typename _A1>
+      friend bool operator<(const SECoPordered_map<_K1, _T1, _C1, _A1>&,
+                            const SECoPordered_map<_K1, _T1, _C1, _A1>&);
+
+private:
+    static bool _SECoPkey_compareequal(const key_type& k1, const key_type &k2)
+    {
+        auto i1(k1.cbegin());
+        auto i2(k2.cbegin());
+        for (; i1 != k1.cend() && i2 != k2.cend(); ++i1, ++i2)
+            if (std::tolower(*i1) != std::tolower(*i2))
+                return false;
+        return (i1 == k1.cend() && i2 == k2.cend());
+    }
+};
+
+/**
+ * \brief SECoPordered_map equality comparison.
+ * \param[in] __x  A %SECoPordered_map.
+ * \param[in] __y  A %SECoPordered_map of the same type as \a __x.
+ * \ingroup expfunc
+ * \return True, if the size, elements and order of the maps are equal.
+ *
+ * This is an equivalence relation. It is linear in the size of the maps. The
+ * maps are considered equivalent, if their sizes are equal, and if
+ * corresponding elements compare equal in the same order.
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline bool operator==(const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                       const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ return __x._v == __y._v; }
+
+/**
+ * \brief SECoPordered_map ordering relation.
+ * \param[in] __x A %SECoPordered_map.
+ * \param[in] __y A %SECoPordered_map of the same type as \a __x.
+ * \ingroup expfunc
+ * \return True, if \a __x is less than \a __y.
+ *
+ * This is a total ordering relation. It is linear in the size of the maps.
+ * The elements must be comparable with \c <.
+ *
+ * See std::lexicographical_compare() for how the determination is made.
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline bool operator<(const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                      const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ return __x._v < __y._v; }
+
+/**
+ * \brief SECoPordered_map unequality comparison.
+ *        Based on operator==
+ * \param[in] __x  A %SECoPordered_map.
+ * \param[in] __y  A %SECoPordered_map of the same type as \a __x.
+ * \ingroup expfunc
+ * \return True, if the size, elements or order of the maps differ.
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline bool operator!=(const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                       const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ return !(__x == __y); }
+
+/**
+ * \brief SECoPordered_map ordering relation.
+ *        Based on operator<
+ * \param[in] __x A %SECoPordered_map.
+ * \param[in] __y A %SECoPordered_map of the same type as \a __x.
+ * \ingroup expfunc
+ * \return True, if \a __x is greather than \a __y.
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline bool operator>(const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                      const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ return __y < __x; }
+
+/**
+ * \brief SECoPordered_map ordering relation.
+ *        Based on operator<
+ * \param[in] __x A %SECoPordered_map.
+ * \param[in] __y A %SECoPordered_map of the same type as \a __x.
+ * \ingroup expfunc
+ * \return True, if \a __x is less than or equal to \a __y.
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline bool operator<=(const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                       const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ return !(__y < __x); }
+
+/**
+ * \brief SECoPordered_map ordering relation.
+ *        Based on operator<
+ * \param[in] __x A %SECoPordered_map.
+ * \param[in] __y A %SECoPordered_map of the same type as \a __x.
+ * \ingroup expfunc
+ * \return True, if \a __x is greather than or equal to \a __y.
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline bool operator>=(const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                       const SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ return !(__x < __y); }
+
+/**
+ * \brief See SECoPordered_map::swap().
+ * \param[in] __x one item
+ * \param[in] __y another item
+ */
+template<typename _Key, typename _Tp, typename _Compare, typename _Alloc>
+inline void swap(SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __x,
+                 SECoPordered_map<_Key, _Tp, _Compare, _Alloc>& __y)
+{ __x.swap(__y); }
+
+/// specialization of the basic_json class which defined SECoPordered_map
+using SECoP_json = nlohmann::basic_json<SECoPordered_map>;
+
+/// Provide a hash operator for above SECoP_json class.
+template<> struct std::hash<SECoP_json>
+{
+    std::size_t operator()(const SECoP_json&j) const
+    {
+        const auto& h = std::hash<SECoP_json::string_t>();
+        return h(j.dump());
+    }
+};
 #endif
 
 #if defined(__cplusplus) && ((defined(QT_VERSION) && defined(QT_VERSION_CHECK)) || defined(DOXYGEN))
@@ -760,13 +1502,13 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     static CSECoPbaseType* createSECoP(const char* szDescription, bool bAllowCommand);
-    static CSECoPbaseType* createSECoP(nlohmann::json json, bool bAllowCommand);
+    static CSECoPbaseType* createSECoP(SECoP_json json, bool bAllowCommand);
     static CSECoPbaseType* importSECoP(const char* szValue);
-    static CSECoPbaseType* importSECoP(const nlohmann::json &data);
+    static CSECoPbaseType* importSECoP(const SECoP_json &data);
     bool importSECoP(const char* szValue, bool bStrict);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    nlohmann::json exportType() const;
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    SECoP_json exportType() const;
+    virtual SECoP_json exportSECoPjson() const;
     QByteArray exportSECoP(bool bNull = true) const;
     CSECoPbaseType* duplicate() const;
     static SECoP_dataPtr simpleBool(bool bValue);
@@ -776,15 +1518,15 @@ public:
     static SECoP_dataPtr simpleString(std::string szValue);
     static SECoP_dataPtr simpleJSON(const char* szValue);
     static SECoP_dataPtr simpleJSON(std::string szValue);
-    nlohmann::json additional() const;
-    nlohmann::json& additional();
+    SECoP_json additional() const;
+    SECoP_json& additional();
 protected:
     void setType(SECoP_V_type iType);
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 private:
     SECoP_V_type m_iType;
-    nlohmann::json m_Additional;
+    SECoP_json m_Additional;
 };
 
 /**
@@ -799,11 +1541,11 @@ public:
     virtual SECoP_V_compareResult compareValue(const CSECoPbaseType* pOther) const;
     virtual bool isValid() const;
     virtual bool clear();
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPnull(const CSECoPnull* pOther); // special copy constructor for "duplicate"
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 };
 
 /**
@@ -816,8 +1558,8 @@ public:
     virtual bool compareType(const CSECoPbaseType* pOther) const;
     virtual SECoP_V_compareResult compareValue(const CSECoPbaseType* pOther) const;
     virtual bool clear();
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
     virtual bool getValue(T &value) const;
     virtual bool setValue(const T value);
 protected:
@@ -844,8 +1586,8 @@ public:
     virtual bool setMinMaxValue(T minimum, T maximum);
 protected:
     CSECoPminmaxType(const CSECoPminmaxType<T>* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     T m_minimum;
     T m_maximum;
 };
@@ -869,8 +1611,8 @@ public:
     virtual bool setSize(unsigned int uSize);
 protected:
     CSECoParrayBase(const CSECoParrayBase* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual bool setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, bool bForceRealloc);
     unsigned int m_uSize;
     unsigned int m_uMinSize;
@@ -898,8 +1640,8 @@ public:
     virtual bool appendValue(const T value);
 protected:
     CSECoParraySimple(const CSECoParraySimple<T>* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual bool setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, bool bForceRealloc);
     bool m_bAdditional;
     T* m_pData;
@@ -933,8 +1675,8 @@ protected:
         QByteArray szName;
     };
     CSECoPenumBase(const CSECoPenumBase* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     QList<internal> m_aItems;
 };
 
@@ -955,8 +1697,8 @@ public:
     virtual bool setScale(double dFactor);
 protected:
     CSECoPscaledBase(const CSECoPscaledBase* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     double m_dScale;
 };
 
@@ -972,11 +1714,11 @@ public:
     virtual bool getBoolValue(bool &bValue) const;
     virtual bool setValue(const bool bValue);
     virtual bool setValue(const long long llValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleBool(const CSECoPsimpleBool* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
 };
 
 /**
@@ -997,12 +1739,12 @@ public:
     virtual bool appendValue(const bool bValue);
     virtual bool appendValue(const long long llValue);
     virtual bool appendValue(const CSECoPsimpleBool &value);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayBool(const CSECoParrayBool* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 };
 
 /**
@@ -1019,12 +1761,12 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     virtual bool setValue(const double dValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleDouble(const CSECoPsimpleDouble* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 };
 
 /**
@@ -1043,12 +1785,12 @@ public:
     virtual bool setArray(const double* pData, unsigned int uItems);
     virtual bool appendValue(const double dValue);
     virtual bool appendValue(const CSECoPsimpleDouble &value);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayDouble(const CSECoParrayDouble* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 };
 
 /**
@@ -1065,12 +1807,12 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     virtual bool setValue(const long long llValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleInt(const CSECoPsimpleInt* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 };
 
 /**
@@ -1089,12 +1831,12 @@ public:
     virtual bool setArray(const long long* pData, unsigned int uItems);
     virtual bool appendValue(const long long llValue);
     virtual bool appendValue(const CSECoPsimpleInt &value);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayInt(const CSECoParrayInt* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 };
 
 /**
@@ -1113,12 +1855,12 @@ public:
     virtual bool setMinMaxValue(double dMinimum, double dMaximum);
     virtual bool getValue(double &dValue) const;
     virtual bool setValue(const double dValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleScaled(const CSECoPsimpleScaled* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual void getMinMaxValue(long long &dMinimum, long long &dMaximum) const;
     virtual bool setMinMaxValue(long long dMinimum, long long dMaximum);
     virtual bool getValue(long long &llValue) const;
@@ -1144,12 +1886,12 @@ public:
     virtual bool setArray(const double* pData, unsigned int uItems);
     virtual bool appendValue(const double dValue);
     virtual bool appendValue(const CSECoPsimpleScaled &value);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayScaled(const CSECoParrayScaled* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual void getMinMaxValue(long long &llMinimum, long long &llMaximum) const;
     virtual bool setMinMaxValue(long long llMinimum, long long llMaximum);
     virtual bool getValue(unsigned int uIndex, long long &llValue) const;
@@ -1173,13 +1915,13 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     virtual bool setValue(const long long llValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
     virtual bool addItem(long long llValue, const char* szName);
 protected:
     CSECoPsimpleEnum(const CSECoPsimpleEnum* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual void getMinMaxValue(long long &llMinimum, long long &llMaximum) const;
     virtual bool setMinMaxValue(long long llMinimum, long long llMaximum);
 };
@@ -1198,14 +1940,14 @@ public:
     virtual bool clear();
     virtual bool setValue(unsigned int uIndex, const long long llValue);
     virtual bool setArray(const long long* pData, unsigned int uItems);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
     virtual bool appendValue(const long long llValue);
     virtual bool appendValue(const CSECoPsimpleEnum &value);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayEnum(const CSECoParrayEnum* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual void getMinMaxValue(long long &llMinimum, long long &llMaximum) const;
     virtual bool setMinMaxValue(long long llMinimum, long long llMaximum);
     virtual bool appendValue(const CSECoPsimpleInt &value);
@@ -1224,12 +1966,12 @@ public:
     virtual QByteArray getValue() const;
     virtual bool setValue(QByteArray abyValue);
     virtual void getMinMaxSize(unsigned int &uMinimum, unsigned int &uMaximum) const;
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPstring(const CSECoPstring* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual bool setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, bool bForceRealloc);
 private:
     virtual bool getValue(unsigned int uIndex, unsigned char &value) const;
@@ -1261,12 +2003,12 @@ public:
     virtual bool removeItem(unsigned int uIndex);
     virtual bool appendValue(const char* szName, CSECoPbaseType* pValue);
     virtual bool appendValue(const char* szName, const CSECoPbaseType* pValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPstruct(const CSECoPstruct* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 private:
     QList<QByteArray>      m_asNames;
     QList<CSECoPbaseType*> m_apItems;
@@ -1292,12 +2034,12 @@ public:
     virtual bool setValue(unsigned int uIndex, const CSECoPbaseType* pValue);
     virtual bool appendValue(CSECoPbaseType* pValue);
     virtual bool appendValue(const CSECoPbaseType* pValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPtuple(const CSECoPtuple* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 private:
     QList<CSECoPbaseType*> m_apItems;
 };
@@ -1325,12 +2067,12 @@ public:
     virtual CSECoPbaseType* getValue(unsigned int uIndex) const;
     virtual bool appendValue(CSECoPbaseType* pValue);
     virtual bool appendValue(const CSECoPbaseType* pValue);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParray(const CSECoParray* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
     virtual bool setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, bool bForceRealloc);
 private:
     CSECoPbaseType*        m_pType;
@@ -1354,12 +2096,12 @@ public:
     virtual CSECoPbaseType* getResult() const;
     virtual bool setArgument(const CSECoPbaseType* pArgument);
     virtual bool setResult(const CSECoPbaseType* pResult);
-    virtual bool importSECoP(const nlohmann::json &data, bool bStrict);
-    virtual nlohmann::json exportSECoPjson() const;
+    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPcommand(const CSECoPcommand* pOther); // special copy constructor for "duplicate"
-    virtual bool createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys);
-    virtual bool exportTypeHelper(nlohmann::json &json, bool bArray) const;
+    virtual bool createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys);
+    virtual bool exportTypeHelper(SECoP_json &json) const;
 private:
     CSECoPbaseType* m_pArgument;
     CSECoPbaseType* m_pResult;

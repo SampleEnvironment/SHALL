@@ -26,8 +26,8 @@ SECoP_S_Command::SECoP_S_Command(QString szCommandID, SECoP_S_callFunction pFunc
     , m_pParent(pParent)
 {
     Q_ASSERT(m_pParent != nullptr);
-    addPropertyInternal("description", CSECoPbaseType::simpleString("command without description"), true);
     addPropertyInternal("datainfo", CSECoPbaseType::simpleJSON("{\"type\":\"command\"}"), true);
+    addPropertyInternal("description", CSECoPbaseType::simpleString("command without description"), true);
 }
 
 /**
@@ -161,14 +161,14 @@ enum SECoP_S_error SECoP_S_Command::addPropertyInternal(QString szKey, const SEC
         if (pString == nullptr)
             return SECoP_S_ERROR_NO_MEMORY;
         pString->setValue(QByteArray::fromStdString(pCommand->exportType().
-                          dump(-1, ' ', false, nlohmann::json::error_handler_t::replace)));
+                          dump(-1, ' ', false, SECoP_json::error_handler_t::replace)));
         pNewValue = SECoP_dataPtr(pString);
     }
 
     SECoP_S_Property* pProperty(nullptr);
     if (iPos >= 0)
     {
-        if (!m_apProperties[iPos]->setValue(pNewValue.get() != nullptr ? pNewValue : pValue))
+        if (!m_apProperties[iPos]->setValue(pNewValue.get() != nullptr ? pNewValue : pValue, bAutomatic))
             iResult = SECoP_S_ERROR_NAME_ALREADY_USED;
         else
             pProperty = m_apProperties[iPos];

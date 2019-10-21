@@ -10,6 +10,8 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include "SECoP-Variant.h"
 #include "SECoP-types.h"
 
+class SECoP_S_Command;
+class SECoP_S_Parameter;
 /**
  * \brief The SECoP_S_Property class stores data about a property of a node,
  *        module, parameter or command. This class has a list m_aSECoPPropertyList
@@ -21,6 +23,8 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
  */
 class SECoP_S_Property
 {
+    friend class SECoP_S_Command;
+    friend class SECoP_S_Parameter;
     // disable copy
     explicit SECoP_S_Property(const SECoP_S_Property &) = delete;
     SECoP_S_Property& operator=(const SECoP_S_Property &) = delete;
@@ -29,6 +33,9 @@ public:
     ~SECoP_S_Property();
 
     bool setValue(const SECoP_dataPtr pValue);
+protected:
+    bool setValue(const SECoP_dataPtr pValue, bool bAutomatic);
+public:
 
     QString getKey() const;
     const SECoP_dataPtr getValue() const;

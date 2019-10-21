@@ -533,7 +533,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
 {
     bool bAppendModOrder(true); //append the module order
     bool bAppendAccOrder(true); //append the accessibles order
-    nlohmann::json qja_Module, qjo_NODE;
+    SECoP_json qja_Module, qjo_NODE;
 
     QHash<QString, int> ahNodeProps(getDefaultProperties("Node"));
     QHash<QString, int> ahModuleProps(getDefaultProperties("Module"));
@@ -561,23 +561,24 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
     }
     if (bAppendModOrder)
     {
-        nlohmann::json orderarray;
+        SECoP_json orderarray;
         for (int i = 0; i < m_apModules.size(); i++)
             orderarray.push_back(m_apModules[i]->getModuleID().toStdString());
         qjo_NODE["order"] = orderarray;
     }
     szMessages.append(checkProperties(bError, "node", ahNodeProps));
+    local_qInfo("qjo_NODE=%s", qjo_NODE.dump().c_str());
 
     // insert modules
     for (int i = 0; i < m_apModules.size(); i++)
     {
         SECoP_S_Module* pModule(m_apModules[i]);
         QString szModuleName(pModule->getModuleID()); // JSON STRING
-        nlohmann::json qja_module;
+        SECoP_json qja_module;
         local_qInfo("module=%s", qUtf8Printable(szModuleName));
         qja_module.push_back(szModuleName.toStdString());//
         // insert module properties
-        nlohmann::json qjo_moduledata;
+        SECoP_json qjo_moduledata;
         QHash<QString, int> ahProps(ahModuleProps);
         for (int j = 0; j < pModule->getNumberOfProperties(); j++)
         {
@@ -601,7 +602,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
                 szMessages.append(checkInterfaceClass(bError, pModule, pProperty));
             else if (!szKey.compare("visibility", Qt::CaseInsensitive))
             {
-                nlohmann::json v(pValue->exportSECoPjson());
+                SECoP_json v(pValue->exportSECoPjson());
                 if (v.is_string())
                 {
                     QStringList aszOptions;
@@ -617,7 +618,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
         if (bAppendAccOrder)
         {
             struct SECoP_S_Module::s_Accessibles entry;
-            nlohmann::json orderarray;
+            SECoP_json orderarray;
 
             for (int j=0; j < pModule->getNumberOfAccessibles(); j++)
             {
@@ -639,7 +640,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
 
         //insert modules accessibles which is a collection of parameters and commands
         struct SECoP_S_Module::s_Accessibles entry;
-        nlohmann::json accessibleobject;
+        SECoP_json accessibleobject;
         for (int j=0; j < pModule->getNumberOfAccessibles(); j++)
         {
             entry = *(pModule->getAccessibles(j));
@@ -650,7 +651,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
                 local_qInfo("  cmdname=%s", qUtf8Printable(szCommandName));
 
                 // insert command properties
-                nlohmann::json qjo_commandproperties;
+                SECoP_json qjo_commandproperties;
                 ahProps = ahCmdProps;
                 for (int k = 0; k < pCommand->getNumberOfProperties(); k++)
                 {
@@ -696,7 +697,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
                 }
                 // insert parameter properties
                 bool bConstant(false);
-                nlohmann::json qjo_parameterproperties;
+                SECoP_json qjo_parameterproperties;
                 ahProps = ahParamProps;
                 for (int k = 0; k < pParameter->getNumberOfProperties(); k++)
                 {
@@ -748,15 +749,17 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
             }
         }
         qjo_moduledata["accessibles"] = accessibleobject;
+        local_qInfo("qjo_moduledata=%s", qjo_moduledata.dump().c_str());
         //qja_module.push_back(qjo_moduledata);
         qja_Module[szModuleName.toStdString()] = qjo_moduledata;
         //qja_Module.push_back(qja_module);
     } //for (int i=0;i<m_apModules.size();i++)
     qjo_NODE["modules"] = qja_Module;
+    local_qInfo("qjo_NODE=%s", qjo_NODE.dump().c_str());
 
     m_szDescribingJSON = qjo_NODE;
     m_bChangeable = false;
-    SECoP_S_Main::log(this, QString::fromStdString(m_szDescribingJSON.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace)), true);
+    SECoP_S_Main::log(this, QString::fromStdString(m_szDescribingJSON.dump(-1, ' ', false, SECoP_json::error_handler_t::replace)), true);
     if (!szMessages.isEmpty())
     {
         szMessages.remove(0, 1);
@@ -1033,7 +1036,7 @@ QString SECoP_S_Node::checkDatatype(bool& bError, QString szName, const CSECoPba
         ahErrors[""] = 0;
         return QString("\ninvalid datainfo of %1").arg(szName);
     } while (0);
-    nlohmann::json o(pValue->additional());
+    SECoP_json o(pValue->additional());
     if (pSScl != nullptr || pAScl != nullptr || pSDbl != nullptr || pADbl != nullptr)
     {
         // check property "unit", "fmtstr", "absolute_resolution" and "relative_resolution"
@@ -1052,7 +1055,7 @@ QString SECoP_S_Node::checkDatatype(bool& bError, QString szName, const CSECoPba
             struct item* p(&aItems[i]);
             if (o.contains(p->szName))
             {
-                const nlohmann::json &v(o[p->szName]);
+                const SECoP_json &v(o[p->szName]);
                 if ((p->szRegExp != nullptr && !v.is_string()) ||
                     (p->szRegExp == nullptr && !v.is_number()))
                 {
@@ -1088,13 +1091,13 @@ QString SECoP_S_Node::checkDatatype(bool& bError, QString szName, const CSECoPba
         if (o.contains("optional"))
         {
             bool bTmpErr(false);
-            const nlohmann::json &vO(o["optional"]);
+            const SECoP_json &vO(o["optional"]);
             if (vO.is_array())
             {
                 std::map<std::string, int> ahOpts;
                 for (unsigned int i = 0; i < vO.size(); ++i)
                 {
-                    const nlohmann::json &v(vO[i]);
+                    const SECoP_json &v(vO[i]);
                     if (v.is_string())
                     {
                         std::string szOpt(v.get<std::string>());
@@ -1188,7 +1191,7 @@ QString SECoP_S_Node::checkInterfaceClass(bool& bError, const SECoP_S_Module* pM
     // check interface_class
     const SECoP_dataPtr pValue(pIFC->getValue());
     const CSECoPstring* pString(nullptr);
-    nlohmann::json vIFC;
+    SECoP_json vIFC;
     bool bCommunicator(false);
     int iType(0);
 
@@ -1202,7 +1205,7 @@ QString SECoP_S_Node::checkInterfaceClass(bool& bError, const SECoP_S_Module* pM
 
     for (unsigned int k = 0; k < vIFC.size(); ++k)
     {
-        nlohmann::json v(vIFC[k]);
+        SECoP_json v(vIFC[k]);
         if (!v.is_string())
             goto wrongIFCtype;
 
@@ -1325,7 +1328,7 @@ wrongStatusEnum:
  */
 QString SECoP_S_Node::checkOrder(bool& bError, const SECoP_S_Module* pModule, const CSECoPbaseType* pOrder)
 {
-    nlohmann::json vOrder(pOrder->exportSECoPjson());
+    SECoP_json vOrder(pOrder->exportSECoPjson());
     QString szFocus(QString("node \"%1\"").arg(m_szNodeID));
     if (pModule != nullptr)
         szFocus.append(QString(" module \"%1\"").arg(pModule->getModuleID()));
@@ -1333,7 +1336,7 @@ QString SECoP_S_Node::checkOrder(bool& bError, const SECoP_S_Module* pModule, co
         goto wrongOrderType;
     for (unsigned int j = 0; j < vOrder.size(); ++j)
     {
-        const nlohmann::json &v(vOrder[j]);
+        const SECoP_json &v(vOrder[j]);
         if (!v.is_string())
             goto wrongOrderType;
         QString szItem(QString::fromStdString(v.get<std::string>()));
@@ -1358,7 +1361,7 @@ wrongItemName:
 }
 
 /// \return the descriptive json for this node
-nlohmann::json SECoP_S_Node::getJSON() const
+SECoP_json SECoP_S_Node::getJSON() const
 {
     return m_szDescribingJSON;
 }

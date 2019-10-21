@@ -270,20 +270,20 @@ void SECoP_S_Worker::writeData(QString szPrefix, SECoP_dataPtr pValue, SECoP_dat
 {
     using std::isnan;
     using std::isinf;
-    nlohmann::json v;
-    nlohmann::json o(nlohmann::json::object());
+    SECoP_json v;
+    SECoP_json o(SECoP_json::object());
     if (!isnan(dblTimestamp) && !isinf(dblTimestamp))
         o["t"] = dblTimestamp;
     if (pSigma != nullptr && pSigma.get() != nullptr)
     {
-        nlohmann::json s(pSigma->exportSECoPjson());
+        SECoP_json s(pSigma->exportSECoPjson());
         if (!s.is_null())
             o["e"] = s;
     }
     if (pValue != nullptr && pValue.get() != nullptr)
         v.push_back(pValue->exportSECoPjson());
     else
-        v.push_back(nlohmann::json());
+        v.push_back(SECoP_json());
     v.push_back(o);
     szPrefix.append(' ');
     szPrefix.append(QString::fromStdString(v.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)));
@@ -670,7 +670,7 @@ void SECoP_S_Worker::parseData(QString szData)
     {
         // describe this SECoP node
         writeData(QString("describing . %1").arg(m_pNode->getJSON().dump(-1, ' ', false,
-                  nlohmann::json::error_handler_t::replace).c_str()).toUtf8());
+                  SECoP_json::error_handler_t::replace).c_str()).toUtf8());
     }
     else if (szSECoPCmd.compare("change", Qt::CaseInsensitive) == 0)
     {
@@ -742,7 +742,7 @@ void SECoP_S_Worker::parseData(QString szData)
 void SECoP_S_Worker::writeError(QString szAction, QString szSpecifier, enum SECoP_S_error iError, QString szCommandLine, QString szDescription)
 {
     QByteArray szData("error");
-    nlohmann::json a;
+    SECoP_json a;
     if (!szAction.isEmpty())
     {
         szData.append('_');
@@ -753,58 +753,58 @@ void SECoP_S_Worker::writeError(QString szAction, QString szSpecifier, enum SECo
     switch (iError)
     {
         case SECoP_S_ERROR_INVALID_MODULE:
-            a.push_back(nlohmann::json("NoSuchModule"));
+            a.push_back(SECoP_json("NoSuchModule"));
             break;
         case SECoP_S_ERROR_INVALID_PARAMETER:
-            a.push_back(nlohmann::json("NoSuchParameter"));
+            a.push_back(SECoP_json("NoSuchParameter"));
             break;
         case SECoP_S_ERROR_INVALID_COMMAND:
-            a.push_back(nlohmann::json("NoSuchCommand"));
+            a.push_back(SECoP_json("NoSuchCommand"));
             break;
         case SECoP_S_ERROR_NOT_IMPLEMENTED:
-            a.push_back(nlohmann::json("NotImplemented"));
+            a.push_back(SECoP_json("NotImplemented"));
             break;
         case SECoP_S_ERROR_COMMAND_FAILED:
-            a.push_back(nlohmann::json("CommunicationFailed"));
+            a.push_back(SECoP_json("CommunicationFailed"));
             break;
         case SECoP_S_ERROR_COMMAND_RUNNING:
-            a.push_back(nlohmann::json("CommandRunning"));
+            a.push_back(SECoP_json("CommandRunning"));
             break;
         case SECoP_S_ERROR_READONLY:
-            a.push_back(nlohmann::json("ReadOnly"));
+            a.push_back(SECoP_json("ReadOnly"));
             break;
         case SECoP_S_ERROR_INVALID_VALUE:
-            a.push_back(nlohmann::json("BadValue"));
+            a.push_back(SECoP_json("BadValue"));
             break;
         case SECoP_S_ERROR_TIMEOUT:
         case SECoP_S_ERROR_COMM_FAILED:
-            a.push_back(nlohmann::json("CommunicationFailed"));
+            a.push_back(SECoP_json("CommunicationFailed"));
             break;
         case SECoP_S_ERROR_IS_BUSY:
-            a.push_back(nlohmann::json("IsBusy"));
+            a.push_back(SECoP_json("IsBusy"));
             break;
         case SECoP_S_ERROR_IS_ERROR:
-            a.push_back(nlohmann::json("IsError"));
+            a.push_back(SECoP_json("IsError"));
             break;
         case SECoP_S_ERROR_DISABLED:
-            a.push_back(nlohmann::json("Disabled"));
+            a.push_back(SECoP_json("Disabled"));
             break;
         case SECoP_S_ERROR_UNKNOWN_COMMAND:
         case SECoP_S_ERROR_INVALID_NAME:
         case SECoP_S_ERROR_INVALID_NODE:
         case SECoP_S_ERROR_SYNTAX:
-            a.push_back(nlohmann::json("ProtocolError"));
+            a.push_back(SECoP_json("ProtocolError"));
             break;
         case SECoP_S_ERROR_INTERNAL:
         default:
-            a.push_back(nlohmann::json("InternalError"));
+            a.push_back(SECoP_json("InternalError"));
             break;
     }
     if (szDescription.isEmpty())
-        a.push_back(nlohmann::json(szCommandLine.toStdString()));
+        a.push_back(SECoP_json(szCommandLine.toStdString()));
     else
-        a.push_back(nlohmann::json(szDescription.toStdString()));
-    a.push_back(nlohmann::json::object_t());
+        a.push_back(SECoP_json(szDescription.toStdString()));
+    a.push_back(SECoP_json::object_t());
     szData.append(' ');
     szData.append(QString::fromStdString(a.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)));
     writeData(szData);

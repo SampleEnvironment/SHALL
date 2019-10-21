@@ -151,7 +151,7 @@ CSECoPbaseType* SECoP_V_createSECoPStatus()
  */
 int SECoP_V_getType(const CSECoPbaseType* pData, char* szBuffer, int iBufferSize)
 {
-    nlohmann::json o(pData->exportType());
+    SECoP_json o(pData->exportType());
     int iResult(-1);
     if (SECoP_V_g_huItems.contains(pData) && o.is_object() && o.size() == 1)
     {
@@ -178,7 +178,7 @@ int SECoP_V_getType(const CSECoPbaseType* pData, char* szBuffer, int iBufferSize
  * \param[in] v SECoP data
  * \return compatible data type or SECoP_VT_NONE
  */
-static SECoP_V_type SECoP_V_fromJSONtype(const nlohmann::json& v)
+static SECoP_V_type SECoP_V_fromJSONtype(const SECoP_json& v)
 {
     switch (v.type())
     {
@@ -239,10 +239,10 @@ static SECoP_V_type SECoP_V_fromJSONtype(const nlohmann::json& v)
  */
 CSECoPbaseType* SECoP_V_fromJSON(const char* szJSON, const CSECoPbaseType* pHint)
 {
-    nlohmann::json v;
+    SECoP_json v;
     try
     {
-        v = nlohmann::json::parse(szJSON);
+        v = SECoP_json::parse(szJSON);
     }
     catch (nlohmann::detail::exception&)
     {
@@ -528,7 +528,7 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
     }
     if (iVerbosity > 1)
     {
-        nlohmann::json a(pData->additional());
+        SECoP_json a(pData->additional());
         if (!a.empty())
         {
             rOutput << "\n" << QString().sprintf("%*c  ", 2 * iLevel, ' ').toUtf8() << QString::fromStdString(a.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)) << "\n";
@@ -1385,7 +1385,7 @@ unsigned int SECoP_V_getAdditionalCount(const CSECoPbaseType* pData, unsigned in
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
     {
-        nlohmann::json j(pItem->additional());
+        SECoP_json j(pItem->additional());
         if (j.is_object())
             return static_cast<unsigned int>(j.size());
     }
@@ -1406,7 +1406,7 @@ unsigned int SECoP_V_getAdditionalIndex(const CSECoPbaseType* pData, unsigned in
     unsigned int uResult(UINT_MAX);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr) && uPosition < 1)
     {
-        nlohmann::json o(pItem->additional());
+        SECoP_json o(pItem->additional());
         if (o.is_object())
         {
             unsigned int i(0);
@@ -1442,10 +1442,10 @@ unsigned int SHALL_EXPORT SECoP_V_getAdditionalKey(const CSECoPbaseType* pData, 
     if (uPosition > 0)
         return 0;
     unsigned int i(0);
-    nlohmann::json j(pItem->additional());
+    SECoP_json j(pItem->additional());
     if (!j.is_object() || uIndex >= j.size())
         return 0;
-    nlohmann::json::const_iterator it(j.cbegin());
+    SECoP_json::const_iterator it(j.cbegin());
     while (i < uIndex)
     {
         if (i >= j.size() || it == j.cend())
@@ -1490,10 +1490,10 @@ unsigned int SHALL_EXPORT SECoP_V_getAdditionalString(const CSECoPbaseType* pDat
     if (uPosition > 0)
         return 0;
     unsigned int i(0);
-    nlohmann::json j(pItem->additional());
+    SECoP_json j(pItem->additional());
     if (!j.is_object() || uIndex >= j.size())
         return 0;
-    nlohmann::json::const_iterator it(j.cbegin());
+    SECoP_json::const_iterator it(j.cbegin());
     while (i < uIndex)
     {
         if (i >= j.size() || it == j.cend())
@@ -1501,7 +1501,7 @@ unsigned int SHALL_EXPORT SECoP_V_getAdditionalString(const CSECoPbaseType* pDat
         ++it;
         ++i;
     }
-    nlohmann::json v(it.value());
+    SECoP_json v(it.value());
     std::string szBuffer;
     if (v.is_string())
         szBuffer = v.get<std::string>();
@@ -1539,10 +1539,10 @@ double SECoP_V_getAdditionalDouble(const CSECoPbaseType* pData, unsigned int uPo
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr) && uPosition < 1)
     {
         unsigned int i(0);
-        nlohmann::json j(pItem->additional());
+        SECoP_json j(pItem->additional());
         if (!j.is_object() || uIndex >= j.size())
             return 0;
-        nlohmann::json::const_iterator it(j.cbegin());
+        SECoP_json::const_iterator it(j.cbegin());
         while (i < uIndex)
         {
             if (i >= j.size() || it == j.cend())
@@ -1550,12 +1550,12 @@ double SECoP_V_getAdditionalDouble(const CSECoPbaseType* pData, unsigned int uPo
             ++it;
             ++i;
         }
-        nlohmann::json v(it.value());
+        SECoP_json v(it.value());
         switch (v.type())
         {
-            case nlohmann::json::value_t::number_float:    d = v.get<double>(); break;
-            case nlohmann::json::value_t::number_integer:  d = v.get<std::int64_t>(); break;
-            case nlohmann::json::value_t::number_unsigned: d = v.get<std::uint64_t>(); break;
+            case SECoP_json::value_t::number_float:    d = v.get<double>(); break;
+            case SECoP_json::value_t::number_integer:  d = v.get<std::int64_t>(); break;
+            case SECoP_json::value_t::number_unsigned: d = v.get<std::uint64_t>(); break;
             default: break;
         }
     }
@@ -1577,10 +1577,10 @@ long long SECoP_V_getAdditionalInteger(const CSECoPbaseType* pData, unsigned int
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr) && uPosition < 1)
     {
         unsigned int i(0);
-        nlohmann::json j(pItem->additional());
+        SECoP_json j(pItem->additional());
         if (!j.is_object() || uIndex >= j.size())
             return 0;
-        nlohmann::json::const_iterator it(j.cbegin());
+        SECoP_json::const_iterator it(j.cbegin());
         while (i < uIndex)
         {
             if (i >= j.size() || it == j.cend())
@@ -1588,12 +1588,12 @@ long long SECoP_V_getAdditionalInteger(const CSECoPbaseType* pData, unsigned int
             ++it;
             ++i;
         }
-        nlohmann::json v(it.value());
+        SECoP_json v(it.value());
         switch (v.type())
         {
-            case nlohmann::json::value_t::number_float:    ll = static_cast<long long>(v.get<double>()); break;
-            case nlohmann::json::value_t::number_integer:  ll = v.get<std::int64_t>(); break;
-            case nlohmann::json::value_t::number_unsigned: ll = static_cast<long long>(v.get<std::uint64_t>()); break;
+            case SECoP_json::value_t::number_float:    ll = static_cast<long long>(v.get<double>()); break;
+            case SECoP_json::value_t::number_integer:  ll = v.get<std::int64_t>(); break;
+            case SECoP_json::value_t::number_unsigned: ll = static_cast<long long>(v.get<std::uint64_t>()); break;
             default: break;
         }
     }
@@ -2142,7 +2142,7 @@ CSECoPbaseType* CSECoPbaseType::duplicate() const
  * \brief This function returns all additional SECoP information of the object.
  * \return additional SECoP information of the object
  */
-nlohmann::json CSECoPbaseType::additional() const
+SECoP_json CSECoPbaseType::additional() const
 {
     return m_Additional;
 }
@@ -2151,7 +2151,7 @@ nlohmann::json CSECoPbaseType::additional() const
  * \brief This function provides read/write access to additional SECoP information of the object.
  * \return reference to additional SECoP information of the object
  */
-nlohmann::json& CSECoPbaseType::additional()
+SECoP_json& CSECoPbaseType::additional()
 {
     return m_Additional;
 }
@@ -2165,10 +2165,10 @@ nlohmann::json& CSECoPbaseType::additional()
  */
 CSECoPbaseType* CSECoPbaseType::createSECoP(const char* szDescription, bool bAllowCommand)
 {
-    nlohmann::json j;
+    SECoP_json j;
     try
     {
-        j = nlohmann::json::parse(szDescription);
+        j = SECoP_json::parse(szDescription);
     }
     catch (nlohmann::detail::exception&)
     {
@@ -2188,11 +2188,11 @@ CSECoPbaseType* CSECoPbaseType::createSECoP(const char* szDescription, bool bAll
  * \param[in] bAllowCommand true: allow type "command", false: values only
  * \return the newly created object or a nullptr on error
  */
-CSECoPbaseType* CSECoPbaseType::createSECoP(nlohmann::json json, bool bAllowCommand)
+CSECoPbaseType* CSECoPbaseType::createSECoP(SECoP_json json, bool bAllowCommand)
 {
     if (!json.is_object() || !json.contains("type"))
         return nullptr;
-    const nlohmann::json &t(json["type"]);
+    const SECoP_json &t(json["type"]);
     if (!t.is_string())
         return nullptr;
     CSECoPbaseType* pValue(nullptr);
@@ -2221,10 +2221,10 @@ CSECoPbaseType* CSECoPbaseType::createSECoP(nlohmann::json json, bool bAllowComm
     {
         if (!json.contains("members"))
             return nullptr;
-        const nlohmann::json &m(json["members"]);
+        const SECoP_json &m(json["members"]);
         if (!m.is_object() || !m.contains("type"))
             return nullptr;
-        const nlohmann::json &t(m["type"]);
+        const SECoP_json &t(m["type"]);
         if (!t.is_string())
             return nullptr;
         szType = QString::fromStdString(t.get<std::string>());
@@ -2265,7 +2265,7 @@ CSECoPbaseType* CSECoPbaseType::createSECoP(nlohmann::json json, bool bAllowComm
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPbaseType::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPbaseType::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     Q_UNUSED(json);
     Q_UNUSED(aszDelKeys);
@@ -2283,10 +2283,10 @@ bool CSECoPbaseType::importSECoP(const char* szValue, bool bStrict)
     const void* pMeMyselfAndI(reinterpret_cast<const void*>(this));
     if (pMeMyselfAndI != nullptr && SECoP_V_g_huItems.contains(this))
     {
-        nlohmann::json j;
+        SECoP_json j;
         try
         {
-            j = nlohmann::json::parse(szValue);
+            j = SECoP_json::parse(szValue);
         }
         catch (nlohmann::detail::exception&)
         {
@@ -2308,7 +2308,7 @@ bool CSECoPbaseType::importSECoP(const char* szValue, bool bStrict)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPbaseType::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPbaseType::importSECoP(const SECoP_json &data, bool bStrict)
 {
     Q_UNUSED(data);
     Q_UNUSED(bStrict);
@@ -2320,7 +2320,7 @@ bool CSECoPbaseType::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in] data SECoP-JSON value
  * \return the newly created object or a nullptr on error
  */
-CSECoPbaseType* CSECoPbaseType::importSECoP(const nlohmann::json &data)
+CSECoPbaseType* CSECoPbaseType::importSECoP(const SECoP_json &data)
 {
     if (data.is_null())
         return new CSECoPnull();
@@ -2384,10 +2384,10 @@ try_again:
  */
 CSECoPbaseType* CSECoPbaseType::importSECoP(const char* szValue)
 {
-    nlohmann::json v;
+    SECoP_json v;
     try
     {
-        v = nlohmann::json::parse(szValue);
+        v = SECoP_json::parse(szValue);
     }
     catch (nlohmann::detail::exception&)
     {
@@ -2404,11 +2404,18 @@ CSECoPbaseType* CSECoPbaseType::importSECoP(const char* szValue)
  * \brief This function returns the SECoP data information of this object.
  * \return SECoP data information
  */
-nlohmann::json CSECoPbaseType::exportType() const
+SECoP_json CSECoPbaseType::exportType() const
 {
-    nlohmann::json json;
-    if (!exportTypeHelper(json, false))
-        return nlohmann::json();
+    const void* pMeMyselfAndI(reinterpret_cast<const void*>(this));
+    if (pMeMyselfAndI == nullptr || !SECoP_V_g_huItems.contains(this))
+        return SECoP_json();
+    SECoP_json json;
+    if (!exportTypeHelper(json))
+        return SECoP_json();
+    if (m_Additional.is_object())
+        for (auto &it : m_Additional.items())
+            if (!json.contains(it.key()))
+                json[it.key()] = it.value();
     return json;
 }
 
@@ -2419,10 +2426,8 @@ nlohmann::json CSECoPbaseType::exportType() const
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPbaseType::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPbaseType::exportTypeHelper(SECoP_json &json) const
 {
-    if (!bArray)
-        json = m_Additional;
     switch (m_iType)
     {
         case SECoP_VT_DOUBLE:
@@ -2474,9 +2479,9 @@ bool CSECoPbaseType::exportTypeHelper(nlohmann::json &json, bool bArray) const
  *        This function has to be overloaded.
  * \return SECoP value
  */
-nlohmann::json CSECoPbaseType::exportSECoPjson() const
+SECoP_json CSECoPbaseType::exportSECoPjson() const
 {
-    return nlohmann::json();
+    return SECoP_json();
 }
 
 /**
@@ -2489,7 +2494,7 @@ QByteArray CSECoPbaseType::exportSECoP(bool bNull) const
     const CSECoPbaseType* pMeMyselfAndI(this);
     QByteArray abyResult;
     if (pMeMyselfAndI != nullptr && SECoP_V_g_huItems.contains(this))
-        abyResult = QByteArray::fromStdString(exportSECoPjson().dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
+        abyResult = QByteArray::fromStdString(exportSECoPjson().dump(-1, ' ', false, SECoP_json::error_handler_t::replace));
     if (bNull && abyResult.isEmpty())
         abyResult = "null";
     return abyResult;
@@ -2655,7 +2660,7 @@ bool CSECoPnull::clear()
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPnull::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPnull::importSECoP(const SECoP_json &data, bool bStrict)
 {
     Q_UNUSED(bStrict);
     return data.is_null();
@@ -2668,10 +2673,9 @@ bool CSECoPnull::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return false: not successful
  */
-bool CSECoPnull::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPnull::exportTypeHelper(SECoP_json &json) const
 {
     Q_UNUSED(json);
-    Q_UNUSED(bArray);
     return false;
 }
 
@@ -2680,9 +2684,9 @@ bool CSECoPnull::exportTypeHelper(nlohmann::json &json, bool bArray) const
  *        This function has to be overloaded.
  * \return SECoP value
  */
-nlohmann::json CSECoPnull::exportSECoPjson() const
+SECoP_json CSECoPnull::exportSECoPjson() const
 {
-    return nlohmann::json();
+    return SECoP_json();
 }
 
 /*****************************************************************************
@@ -2786,7 +2790,7 @@ template <typename T> bool CSECoPsimpleType<T>::setValue(const T value)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-template <typename T> bool CSECoPsimpleType<T>::importSECoP(const nlohmann::json &data, bool bStrict)
+template <typename T> bool CSECoPsimpleType<T>::importSECoP(const SECoP_json &data, bool bStrict)
 {
     Q_UNUSED(bStrict);
     if (data.is_null())
@@ -2837,12 +2841,12 @@ template <typename T> bool CSECoPsimpleType<T>::importSECoP(const nlohmann::json
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-template <typename T> nlohmann::json CSECoPsimpleType<T>::exportSECoPjson() const
+template <typename T> SECoP_json CSECoPsimpleType<T>::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
     if (pMeMyselfAndI == nullptr)
-        return nlohmann::json();
-    return nlohmann::json(m_value);
+        return SECoP_json();
+    return SECoP_json(m_value);
 }
 
 /*****************************************************************************
@@ -3031,7 +3035,7 @@ template <typename T> bool CSECoPminmaxType<T>::setMinMaxValue(T minimum, T maxi
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-template <typename T> bool CSECoPminmaxType<T>::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+template <typename T> bool CSECoPminmaxType<T>::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     Q_UNUSED(aszDelKeys);
     T aItems[2];
@@ -3048,7 +3052,7 @@ template <typename T> bool CSECoPminmaxType<T>::createSECoPHelper(nlohmann::json
         double d;
         if (!json.contains(aNames[i]))
             continue;
-        nlohmann::json v(json[aNames[i]]);
+        SECoP_json v(json[aNames[i]]);
         if (v.is_null())
             continue;
         if (!v.is_number())
@@ -3085,21 +3089,21 @@ erase_it:
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-template <typename T> bool CSECoPminmaxType<T>::exportTypeHelper(nlohmann::json &json, bool bArray) const
+template <typename T> bool CSECoPminmaxType<T>::exportTypeHelper(SECoP_json &json) const
 {
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
     if (std::numeric_limits<T>::has_quiet_NaN)
     {
         if (std::isfinite(static_cast<double>(m_minimum)))
-            json["min"] = nlohmann::json(m_minimum);
+            json["min"] = SECoP_json(m_minimum);
         if (std::isfinite(static_cast<double>(m_maximum)))
-            json["max"] = nlohmann::json(m_maximum);
+            json["max"] = SECoP_json(m_maximum);
     }
     else
     {
-        json["min"] = nlohmann::json(m_minimum);
-        json["max"] = nlohmann::json(m_maximum);
+        json["min"] = SECoP_json(m_minimum);
+        json["max"] = SECoP_json(m_maximum);
     }
     return true;
 }
@@ -3260,7 +3264,7 @@ bool CSECoParrayBase::setSize(unsigned int uSize)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParrayBase::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParrayBase::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     Q_UNUSED(aszDelKeys);
     std::vector<std::string> aNames;
@@ -3286,7 +3290,7 @@ bool CSECoParrayBase::createSECoPHelper(nlohmann::json &json, QStringList &aszDe
     {
         if (!json.contains(aNames[i]))
             continue;
-        nlohmann::json v(json[aNames[i]]);
+        SECoP_json v(json[aNames[i]]);
         if (!v.is_number_unsigned())
             return false;
         std::uint64_t j(v.get<std::uint64_t>());
@@ -3308,9 +3312,9 @@ bool CSECoParrayBase::createSECoPHelper(nlohmann::json &json, QStringList &aszDe
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParrayBase::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParrayBase::exportTypeHelper(SECoP_json &json) const
 {
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
     std::vector<std::string> aNames;
     bool bForce(false);
@@ -3337,9 +3341,9 @@ bool CSECoParrayBase::exportTypeHelper(nlohmann::json &json, bool bArray) const
             break;
     }
     if (m_uMinSize > 0 && !aNames[0].empty())
-        json[aNames[0]] = nlohmann::json(static_cast<qint64>(m_uMinSize));
+        json[aNames[0]] = SECoP_json(static_cast<qint64>(m_uMinSize));
     if ((bForce || m_uMaxSize < uMaxSize) && !aNames[1].empty())
-        json[aNames[1]] = nlohmann::json(static_cast<qint64>(m_uMaxSize));
+        json[aNames[1]] = SECoP_json(static_cast<qint64>(m_uMaxSize));
     return true;
 }
 
@@ -3604,13 +3608,13 @@ template <typename T> bool CSECoParraySimple<T>::appendValue(const T value)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-template <typename T> bool CSECoParraySimple<T>::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+template <typename T> bool CSECoParraySimple<T>::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParrayBase::createSECoPHelper(json, aszDelKeys))
         return false;
     if (!json.contains("members"))
         return false;
-    const nlohmann::json &v(json["members"]);
+    const SECoP_json &v(json["members"]);
     if (!v.is_object() || !v.contains("type"))
         return false;
     if (!aszDelKeys.contains("members"))
@@ -3630,9 +3634,9 @@ template <typename T> bool CSECoParraySimple<T>::createSECoPHelper(nlohmann::jso
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-template <typename T> bool CSECoParraySimple<T>::exportTypeHelper(nlohmann::json &json, bool bArray) const
+template <typename T> bool CSECoParraySimple<T>::exportTypeHelper(SECoP_json &json) const
 {
-    return CSECoParrayBase::exportTypeHelper(json, bArray);
+    return CSECoParrayBase::exportTypeHelper(json);
 }
 
 /*****************************************************************************
@@ -3815,17 +3819,17 @@ bool CSECoPenumBase::addItem(long long llValue, const char* szName)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPenumBase::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPenumBase::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!json.contains("members"))
         return false;
-    const nlohmann::json &vMembers(json["members"]);
+    const SECoP_json &vMembers(json["members"]);
     if (!vMembers.is_object())
         return false;
     m_aItems.clear();
     for (auto &it : vMembers.items())
     {
-        const nlohmann::json &v(it.value());
+        const SECoP_json &v(it.value());
         if (!v.is_number_integer())
             return false;
         if (!addItem(static_cast<long long>(v.get<std::int64_t>()), it.key().c_str()))
@@ -3843,15 +3847,15 @@ bool CSECoPenumBase::createSECoPHelper(nlohmann::json &json, QStringList &aszDel
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPenumBase::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPenumBase::exportTypeHelper(SECoP_json &json) const
 {
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
-    nlohmann::json m;
+    SECoP_json m;
     for (int i = 0; i < m_aItems.size(); ++i)
     {
         const internal &p(m_aItems[i]);
-        m[p.szName.constData()] = nlohmann::json(p.llValue);
+        m[p.szName.constData()] = SECoP_json(p.llValue);
     }
     json["members"] = m;
     return true;
@@ -3987,11 +3991,11 @@ bool CSECoPscaledBase::setScale(double dFactor)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPscaledBase::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPscaledBase::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!json.contains("scale"))
         return false;
-    nlohmann::json scale(json["scale"]);
+    SECoP_json scale(json["scale"]);
     if (!scale.is_number())
         return false;
     m_dScale = scale.get<double>();
@@ -4007,11 +4011,11 @@ bool CSECoPscaledBase::createSECoPHelper(nlohmann::json &json, QStringList &aszD
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPscaledBase::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPscaledBase::exportTypeHelper(SECoP_json &json) const
 {
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
-    json["scale"] = nlohmann::json(m_dScale);
+    json["scale"] = SECoP_json(m_dScale);
     return true;
 }
 
@@ -4091,7 +4095,7 @@ bool CSECoPsimpleBool::setValue(const long long llValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful
  */
-bool CSECoPsimpleBool::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPsimpleBool::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     Q_UNUSED(json);
     Q_UNUSED(aszDelKeys);
@@ -4104,7 +4108,7 @@ bool CSECoPsimpleBool::createSECoPHelper(nlohmann::json &json, QStringList &aszD
  * \param[in] bStrict true: be strict, false: relax parsing (allow numbers and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleBool::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPsimpleBool::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -4150,12 +4154,12 @@ bool CSECoPsimpleBool::importSECoP(const nlohmann::json &data, bool bStrict)
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPsimpleBool::exportSECoPjson() const
+SECoP_json CSECoPsimpleBool::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
     if (pMeMyselfAndI == nullptr)
-        return nlohmann::json();
-    return nlohmann::json(static_cast<bool>(m_value != 0LL));
+        return SECoP_json();
+    return SECoP_json(static_cast<bool>(m_value != 0LL));
 }
 
 /*****************************************************************************
@@ -4321,7 +4325,7 @@ bool CSECoParrayBool::appendValue(const CSECoPsimpleBool &value)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParrayBool::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParrayBool::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParraySimple<long long>::createSECoPHelper(json, aszDelKeys))
         return false;
@@ -4335,7 +4339,7 @@ bool CSECoParrayBool::createSECoPHelper(nlohmann::json &json, QStringList &aszDe
  * \param[in] bStrict true: be strict, false: relax parsing (allow numbers and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayBool::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoParrayBool::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -4374,10 +4378,9 @@ bool CSECoParrayBool::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParrayBool::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParrayBool::exportTypeHelper(SECoP_json &json) const
 {
-    Q_UNUSED(bArray);
-    if (!CSECoParraySimple<long long>::exportTypeHelper(json, true))
+    if (!CSECoParraySimple<long long>::exportTypeHelper(json))
         return false;
     CSECoPsimpleBool b;
     b.additional() = additional();
@@ -4389,13 +4392,13 @@ bool CSECoParrayBool::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoParrayBool::exportSECoPjson() const
+SECoP_json CSECoParrayBool::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
-    nlohmann::json a;
+    SECoP_json a;
     if (pMeMyselfAndI != nullptr)
         for (unsigned int i = 0; i < m_uSize; ++i)
-            a.push_back(nlohmann::json(static_cast<bool>(m_pData[i] != 0LL)));
+            a.push_back(SECoP_json(static_cast<bool>(m_pData[i] != 0LL)));
     return a;
 }
 
@@ -4487,7 +4490,7 @@ bool CSECoPsimpleDouble::setValue(const double dValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleDouble::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPsimpleDouble::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     return CSECoPminmaxType<double>::createSECoPHelper(json, aszDelKeys);
 }
@@ -4498,7 +4501,7 @@ bool CSECoPsimpleDouble::createSECoPHelper(nlohmann::json &json, QStringList &as
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleDouble::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPsimpleDouble::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -4557,21 +4560,21 @@ bool CSECoPsimpleDouble::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleDouble::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPsimpleDouble::exportTypeHelper(SECoP_json &json) const
 {
-    return CSECoPminmaxType<double>::exportTypeHelper(json, bArray);
+    return CSECoPminmaxType<double>::exportTypeHelper(json);
 }
 
 /**
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPsimpleDouble::exportSECoPjson() const
+SECoP_json CSECoPsimpleDouble::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
     if (pMeMyselfAndI == nullptr)
-        return nlohmann::json();
-    return nlohmann::json(m_value);
+        return SECoP_json();
+    return SECoP_json(m_value);
 }
 
 /*****************************************************************************
@@ -4706,11 +4709,11 @@ bool CSECoParrayDouble::appendValue(const CSECoPsimpleDouble &value)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParrayDouble::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParrayDouble::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParraySimple<double>::createSECoPHelper(json, aszDelKeys))
         return false;
-    nlohmann::json &m(json["members"]);
+    SECoP_json &m(json["members"]);
     if (QString::fromStdString(m["type"]).compare("double", Qt::CaseInsensitive) != 0)
         return false;
     return CSECoPminmaxType<double>::createSECoPHelper(m, aszDelKeys);
@@ -4722,7 +4725,7 @@ bool CSECoParrayDouble::createSECoPHelper(nlohmann::json &json, QStringList &asz
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayDouble::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoParrayDouble::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -4761,11 +4764,11 @@ bool CSECoParrayDouble::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParrayDouble::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParrayDouble::exportTypeHelper(SECoP_json &json) const
 {
-    nlohmann::json tmp;
-    if (!CSECoPminmaxType<double>::exportTypeHelper(tmp, bArray) ||
-        !CSECoParraySimple<double>::exportTypeHelper(json, true))
+    SECoP_json tmp;
+    if (!CSECoPminmaxType<double>::exportTypeHelper(tmp) ||
+        !CSECoParraySimple<double>::exportTypeHelper(json))
         return false;
     tmp["type"] = "double";
     json["members"] = tmp;
@@ -4776,13 +4779,13 @@ bool CSECoParrayDouble::exportTypeHelper(nlohmann::json &json, bool bArray) cons
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoParrayDouble::exportSECoPjson() const
+SECoP_json CSECoParrayDouble::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
-    nlohmann::json a;
+    SECoP_json a;
     if (pMeMyselfAndI != nullptr)
         for (unsigned int i = 0; i < m_uSize; ++i)
-            a.push_back(nlohmann::json(m_pData[i]));
+            a.push_back(SECoP_json(m_pData[i]));
     return a;
 }
 
@@ -4874,7 +4877,7 @@ bool CSECoPsimpleInt::setValue(const long long llValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleInt::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPsimpleInt::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     return CSECoPminmaxType<long long>::createSECoPHelper(json, aszDelKeys);
 }
@@ -4885,7 +4888,7 @@ bool CSECoPsimpleInt::createSECoPHelper(nlohmann::json &json, QStringList &aszDe
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleInt::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPsimpleInt::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -4933,21 +4936,21 @@ bool CSECoPsimpleInt::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleInt::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPsimpleInt::exportTypeHelper(SECoP_json &json) const
 {
-    return CSECoPminmaxType<long long>::exportTypeHelper(json, bArray);
+    return CSECoPminmaxType<long long>::exportTypeHelper(json);
 }
 
 /**
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPsimpleInt::exportSECoPjson() const
+SECoP_json CSECoPsimpleInt::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
     if (pMeMyselfAndI == nullptr)
-        return nlohmann::json();
-    return nlohmann::json(m_value);
+        return SECoP_json();
+    return SECoP_json(m_value);
 }
 
 /*****************************************************************************
@@ -5082,7 +5085,7 @@ bool CSECoParrayInt::appendValue(const CSECoPsimpleInt &value)
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayInt::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoParrayInt::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -5120,11 +5123,11 @@ bool CSECoParrayInt::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParrayInt::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParrayInt::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParraySimple<long long>::createSECoPHelper(json, aszDelKeys))
         return false;
-    nlohmann::json &m(json["members"]);
+    SECoP_json &m(json["members"]);
     if (QString::fromStdString(m["type"]).compare("int", Qt::CaseInsensitive) != 0)
         return false;
     return CSECoPminmaxType<long long>::createSECoPHelper(m, aszDelKeys);
@@ -5137,11 +5140,11 @@ bool CSECoParrayInt::createSECoPHelper(nlohmann::json &json, QStringList &aszDel
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParrayInt::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParrayInt::exportTypeHelper(SECoP_json &json) const
 {
-    nlohmann::json tmp;
-    if (!CSECoPminmaxType<long long>::exportTypeHelper(tmp, bArray) ||
-        !CSECoParraySimple<long long>::exportTypeHelper(json, true))
+    SECoP_json tmp;
+    if (!CSECoPminmaxType<long long>::exportTypeHelper(tmp) ||
+        !CSECoParraySimple<long long>::exportTypeHelper(json))
         return false;
     tmp["type"] = "int";
     json["members"] = tmp;
@@ -5152,13 +5155,13 @@ bool CSECoParrayInt::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoParrayInt::exportSECoPjson() const
+SECoP_json CSECoParrayInt::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
-    nlohmann::json a;
+    SECoP_json a;
     if (pMeMyselfAndI != nullptr)
         for (unsigned int i = 0; i < m_uSize; ++i)
-            a.push_back(nlohmann::json(m_pData[i]));
+            a.push_back(SECoP_json(m_pData[i]));
     return a;
 }
 
@@ -5350,7 +5353,7 @@ bool CSECoPsimpleScaled::setValue(double dValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleScaled::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPsimpleScaled::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoPscaledBase::createSECoPHelper(json, aszDelKeys))
         return false;
@@ -5363,7 +5366,7 @@ bool CSECoPsimpleScaled::createSECoPHelper(nlohmann::json &json, QStringList &as
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleScaled::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPsimpleScaled::importSECoP(const SECoP_json &data, bool bStrict)
 {
     return CSECoPsimpleInt::importSECoP(data, bStrict);
 }
@@ -5374,16 +5377,16 @@ bool CSECoPsimpleScaled::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleScaled::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPsimpleScaled::exportTypeHelper(SECoP_json &json) const
 {
-    return CSECoPscaledBase::exportTypeHelper(json, bArray);
+    return CSECoPscaledBase::exportTypeHelper(json);
 }
 
 /**
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPsimpleScaled::exportSECoPjson() const
+SECoP_json CSECoPsimpleScaled::exportSECoPjson() const
 {
     return CSECoPsimpleInt::exportSECoPjson();
 }
@@ -5674,11 +5677,11 @@ bool CSECoParrayScaled::appendValue(const CSECoPsimpleInt &value)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParrayScaled::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParrayScaled::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParrayInt::createSECoPHelper(json, aszDelKeys))
         return false;
-    nlohmann::json &m(json["members"]);
+    SECoP_json &m(json["members"]);
     if (QString::fromStdString(m["type"]).compare("scaled", Qt::CaseInsensitive) != 0)
         return false;
     return CSECoPscaledBase::createSECoPHelper(m, aszDelKeys) &&
@@ -5691,7 +5694,7 @@ bool CSECoParrayScaled::createSECoPHelper(nlohmann::json &json, QStringList &asz
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayScaled::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoParrayScaled::importSECoP(const SECoP_json &data, bool bStrict)
 {
     return CSECoParrayInt::importSECoP(data, bStrict);
 }
@@ -5703,11 +5706,11 @@ bool CSECoParrayScaled::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParrayScaled::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParrayScaled::exportTypeHelper(SECoP_json &json) const
 {
-    nlohmann::json tmp;
-    if (!CSECoPscaledBase::exportTypeHelper(tmp, bArray) ||
-        !CSECoParrayInt::exportTypeHelper(json, true))
+    SECoP_json tmp;
+    if (!CSECoPscaledBase::exportTypeHelper(tmp) ||
+        !CSECoParrayInt::exportTypeHelper(json))
         return false;
     tmp["type"] = "scaled";
     json["members"] = tmp;
@@ -5718,7 +5721,7 @@ bool CSECoParrayScaled::exportTypeHelper(nlohmann::json &json, bool bArray) cons
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoParrayScaled::exportSECoPjson() const
+SECoP_json CSECoParrayScaled::exportSECoPjson() const
 {
     return CSECoParrayInt::exportSECoPjson();
 }
@@ -5848,7 +5851,7 @@ bool CSECoPsimpleEnum::setMinMaxValue(long long llMinimum, long long llMaximum)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleEnum::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPsimpleEnum::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     return CSECoPenumBase::createSECoPHelper(json, aszDelKeys);
 }
@@ -5859,7 +5862,7 @@ bool CSECoPsimpleEnum::createSECoPHelper(nlohmann::json &json, QStringList &aszD
  * \param[in] bStrict true: be strict, false: relax parsing (numbers, boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleEnum::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPsimpleEnum::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -5883,16 +5886,16 @@ bool CSECoPsimpleEnum::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleEnum::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPsimpleEnum::exportTypeHelper(SECoP_json &json) const
 {
-    return CSECoPenumBase::exportTypeHelper(json, bArray);
+    return CSECoPenumBase::exportTypeHelper(json);
 }
 
 /**
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPsimpleEnum::exportSECoPjson() const
+SECoP_json CSECoPsimpleEnum::exportSECoPjson() const
 {
     return CSECoPsimpleInt::exportSECoPjson();
 }
@@ -6112,11 +6115,11 @@ bool CSECoParrayEnum::setMinMaxValue(long long llMinimum, long long llMaximum)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParrayEnum::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParrayEnum::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParrayInt::createSECoPHelper(json, aszDelKeys))
         return false;
-    nlohmann::json &m(json["members"]);
+    SECoP_json &m(json["members"]);
     if (QString::fromStdString(m["type"]).compare("enum", Qt::CaseInsensitive) != 0)
         return false;
     return CSECoPenumBase::createSECoPHelper(m, aszDelKeys);
@@ -6128,7 +6131,7 @@ bool CSECoParrayEnum::createSECoPHelper(nlohmann::json &json, QStringList &aszDe
  * \param[in] bStrict true: be strict, false: relax parsing (numbers, boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayEnum::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoParrayEnum::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -6162,11 +6165,11 @@ bool CSECoParrayEnum::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParrayEnum::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParrayEnum::exportTypeHelper(SECoP_json &json) const
 {
-    nlohmann::json tmp;
-    if (!CSECoPenumBase::exportTypeHelper(tmp, bArray) ||
-        !CSECoParrayInt::exportTypeHelper(json, true))
+    SECoP_json tmp;
+    if (!CSECoPenumBase::exportTypeHelper(tmp) ||
+        !CSECoParrayInt::exportTypeHelper(json))
         return false;
     tmp["type"] = "enum";
     json["members"] = tmp;
@@ -6177,7 +6180,7 @@ bool CSECoParrayEnum::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoParrayEnum::exportSECoPjson() const
+SECoP_json CSECoParrayEnum::exportSECoPjson() const
 {
     return CSECoParrayInt::exportSECoPjson();
 }
@@ -6288,7 +6291,8 @@ bool CSECoPstring::setValue(QByteArray abyValue)
         {
             try
             {
-                static_cast<void>(nlohmann::json::parse(abyValue.constData()));
+                auto _t(SECoP_json::parse(abyValue.constData()));
+                Q_UNUSED(_t);
             }
             catch (nlohmann::detail::exception&)
             {
@@ -6394,7 +6398,7 @@ bool CSECoPstring::setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, b
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPstring::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPstring::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParrayBase::createSECoPHelper(json, aszDelKeys))
         return false;
@@ -6402,7 +6406,7 @@ bool CSECoPstring::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKe
     m_uMaxSize  = UINT_MAX - 1;
     if (json.contains("isUTF8"))
     {
-        const nlohmann::json &v(json["isUTF8"]);
+        const SECoP_json &v(json["isUTF8"]);
         if (!v.is_boolean())
             return false;
         m_bIsUTF8 = v.get<bool>();
@@ -6420,14 +6424,14 @@ bool CSECoPstring::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKe
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPstring::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPstring::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
     if (data.is_string())
         return setValue(QByteArray::fromStdString(data.get<std::string>()));
     if (!bStrict)
-        return setValue(QByteArray::fromStdString(data.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace)));
+        return setValue(QByteArray::fromStdString(data.dump(-1, ' ', false, SECoP_json::error_handler_t::replace)));
     return false;
 }
 
@@ -6438,9 +6442,9 @@ bool CSECoPstring::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPstring::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPstring::exportTypeHelper(SECoP_json &json) const
 {
-    if (!CSECoParraySimple<unsigned char>::exportTypeHelper(json, bArray))
+    if (!CSECoParraySimple<unsigned char>::exportTypeHelper(json))
         return false;
     if (getType() == SECoP_VT_STRING)
     {
@@ -6457,27 +6461,27 @@ bool CSECoPstring::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPstring::exportSECoPjson() const
+SECoP_json CSECoPstring::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
     if (pMeMyselfAndI == nullptr)
-        return nlohmann::json();
+        return SECoP_json();
     if (getType() == SECoP_VT_JSON)
     {
         try
         {
-            return nlohmann::json::parse(getValue().constData());
+            return SECoP_json::parse(getValue().constData());
         }
-        catch (nlohmann::json::exception&)
+        catch (SECoP_json::exception&)
         {
         }
         catch (...)
         {
         }
-        return nlohmann::json();
+        return SECoP_json();
     }
     else
-        return nlohmann::json(getValue().toStdString());
+        return SECoP_json(getValue().toStdString());
 }
 
 /*****************************************************************************
@@ -6777,11 +6781,11 @@ bool CSECoPstruct::appendValue(const char* szName, const CSECoPbaseType* pValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPstruct::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPstruct::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!json.contains("members"))
         return false;
-    const nlohmann::json &vMembers(json["members"]);
+    const SECoP_json &vMembers(json["members"]);
     if (!vMembers.is_object())
         return false;
     CSECoPstruct::clear();
@@ -6807,7 +6811,7 @@ bool CSECoPstruct::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKe
  * \param[in] bStrict true: be strict, false: relax parsing (allow missing parts, imports unknown keys)
  * \return true: successful, false: not successful
  */
-bool CSECoPstruct::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPstruct::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -6870,7 +6874,7 @@ bool CSECoPstruct::importSECoP(const nlohmann::json &data, bool bStrict)
         if (abTouched[iIndex])
             return false;
         abTouched[iIndex] = true;
-        const nlohmann::json &v(it.value());
+        const SECoP_json &v(it.value());
         if (v.is_null())
             continue;
         if (m_apItems[iIndex] == nullptr)
@@ -6888,10 +6892,10 @@ bool CSECoPstruct::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPstruct::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPstruct::exportTypeHelper(SECoP_json &json) const
 {
-    nlohmann::json m;
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    SECoP_json m;
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
     for (int i = 0; i < m_asNames.size(); ++i)
     {
@@ -6907,15 +6911,15 @@ bool CSECoPstruct::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPstruct::exportSECoPjson() const
+SECoP_json CSECoPstruct::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
-    nlohmann::json o;
+    SECoP_json o;
     if (pMeMyselfAndI != nullptr)
     {
         for (int i = 0; i < m_asNames.size(); ++i)
         {
-            nlohmann::json v;
+            SECoP_json v;
             if (m_apItems[i] != nullptr)
                 v = m_apItems[i]->exportSECoPjson();
             o[m_asNames[i].toStdString()] = v;
@@ -7173,11 +7177,11 @@ bool CSECoPtuple::appendValue(const CSECoPbaseType* pValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPtuple::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPtuple::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!json.contains("members"))
         return false;
-    const nlohmann::json &aMembers(json["members"]);
+    const SECoP_json &aMembers(json["members"]);
     if (!aMembers.is_array() || aMembers.empty())
         return false;
     CSECoPtuple::clear();
@@ -7203,7 +7207,7 @@ bool CSECoPtuple::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKey
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPtuple::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPtuple::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -7229,7 +7233,7 @@ bool CSECoPtuple::importSECoP(const nlohmann::json &data, bool bStrict)
     }
     for (unsigned int i = 0; i < data.size(); ++i)
     {
-        const nlohmann::json &v(data[i]);
+        const SECoP_json &v(data[i]);
         if (v.is_null())
             continue;
         if (m_apItems[static_cast<int>(i)] == nullptr)
@@ -7247,10 +7251,10 @@ bool CSECoPtuple::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPtuple::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPtuple::exportTypeHelper(SECoP_json &json) const
 {
-    nlohmann::json m;
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    SECoP_json m;
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
     for (int i = 0; i < m_apItems.size(); ++i)
     {
@@ -7266,15 +7270,15 @@ bool CSECoPtuple::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPtuple::exportSECoPjson() const
+SECoP_json CSECoPtuple::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
-    nlohmann::json a;
+    SECoP_json a;
     if (pMeMyselfAndI != nullptr)
     {
         for (int i = 0; i < m_apItems.size(); ++i)
         {
-            nlohmann::json v;
+            SECoP_json v;
             if (m_apItems[i] != nullptr)
                 v = m_apItems[i]->exportSECoPjson();
             a.push_back(v);
@@ -7629,13 +7633,13 @@ bool CSECoParray::appendValue(const CSECoPbaseType* pValue)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoParray::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoParray::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!CSECoParrayBase::createSECoPHelper(json, aszDelKeys))
         return false;
     if (!json.contains("members"))
         return false;
-    const nlohmann::json &v(json["members"]);
+    const SECoP_json &v(json["members"]);
     if (!v.is_object() || !v.contains("type"))
         return false;
     CSECoParray::clear();
@@ -7656,7 +7660,7 @@ bool CSECoParray::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKey
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoParray::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoParray::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
         return true;
@@ -7667,7 +7671,7 @@ bool CSECoParray::importSECoP(const nlohmann::json &data, bool bStrict)
         return false;
     for (int i = 0; i < static_cast<int>(data.size()); ++i)
     {
-        const nlohmann::json &v(data[static_cast<unsigned int>(i)]);
+        const SECoP_json &v(data[static_cast<unsigned int>(i)]);
         if (v.is_null())
             continue;
         if (m_apItems[i] == nullptr)
@@ -7689,9 +7693,9 @@ bool CSECoParray::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoParray::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoParray::exportTypeHelper(SECoP_json &json) const
 {
-    if (m_pType == nullptr || !CSECoParrayBase::exportTypeHelper(json, bArray))
+    if (m_pType == nullptr || !CSECoParrayBase::exportTypeHelper(json))
         return false;
     if (m_uMaxSize >= INT_MAX)
         json.erase("maxlen");
@@ -7703,15 +7707,15 @@ bool CSECoParray::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoParray::exportSECoPjson() const
+SECoP_json CSECoParray::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
-    nlohmann::json a;
+    SECoP_json a;
     if (pMeMyselfAndI != nullptr)
     {
         for (int i = 0; i < m_apItems.size(); ++i)
         {
-            nlohmann::json v;
+            SECoP_json v;
             if (m_apItems[i] != nullptr)
                 v = m_apItems[i]->exportSECoPjson();
             a.push_back(v);
@@ -7920,7 +7924,7 @@ bool CSECoPcommand::setResult(const CSECoPbaseType* pResult)
  * \param[in] aszDelKeys standard keys, which should be removed for additional information
  * \return true: successful, false: not successful
  */
-bool CSECoPcommand::createSECoPHelper(nlohmann::json &json, QStringList &aszDelKeys)
+bool CSECoPcommand::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
 {
     if (!clear())
         return false;
@@ -7936,7 +7940,7 @@ bool CSECoPcommand::createSECoPHelper(nlohmann::json &json, QStringList &aszDelK
             continue;
         if (!aszDelKeys.contains(pItem->szName))
             aszDelKeys.append(pItem->szName);
-        const nlohmann::json &v(json[pItem->szName]);
+        const SECoP_json &v(json[pItem->szName]);
         if (v.is_null())
             continue;
         CSECoPbaseType* pVar(CSECoPbaseType::createSECoP(v, false));
@@ -7953,7 +7957,7 @@ bool CSECoPcommand::createSECoPHelper(nlohmann::json &json, QStringList &aszDelK
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPcommand::importSECoP(const nlohmann::json &data, bool bStrict)
+bool CSECoPcommand::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (m_pArgument != nullptr)
         return m_pArgument->importSECoP(data, bStrict);
@@ -7967,12 +7971,12 @@ bool CSECoPcommand::importSECoP(const nlohmann::json &data, bool bStrict)
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
-bool CSECoPcommand::exportTypeHelper(nlohmann::json &json, bool bArray) const
+bool CSECoPcommand::exportTypeHelper(SECoP_json &json) const
 {
-    if (!CSECoPbaseType::exportTypeHelper(json, bArray))
+    if (!CSECoPbaseType::exportTypeHelper(json))
         return false;
-    json["argument"] = nlohmann::json();
-    json["result"] = nlohmann::json();
+    json["argument"] = SECoP_json();
+    json["result"] = SECoP_json();
     if (m_pArgument != nullptr && dynamic_cast<const CSECoPnull*>(m_pArgument) == nullptr)
         json["argument"] = m_pArgument->exportType();
     if (m_pResult != nullptr && dynamic_cast<const CSECoPnull*>(m_pResult) == nullptr)
@@ -7984,11 +7988,11 @@ bool CSECoPcommand::exportTypeHelper(nlohmann::json &json, bool bArray) const
  * \brief This overloaded function exports the resulting value as SECoP value.
  * \return SECoP value
  */
-nlohmann::json CSECoPcommand::exportSECoPjson() const
+SECoP_json CSECoPcommand::exportSECoPjson() const
 {
     const CSECoPbaseType* pMeMyselfAndI(this);
     if (pMeMyselfAndI != nullptr && m_pResult != nullptr)
         return m_pResult->exportSECoPjson();
     else
-        return nlohmann::json();
+        return SECoP_json();
 }
