@@ -38,7 +38,7 @@ public:
     static SECoP_S_Main* getInstance();
     static const char* getErrorString(enum SECoP_S_error iError);
     static double getCurrentTime();
-    static QByteArray getGitVersion();
+    static QByteArray getVcsVersion();
     static bool hasFunctionPointers();
     static enum SECoP_S_error createNode(QString szID, QString szDesc, QString szInterface, quint16 wPort);
     static enum SECoP_S_error deleteNode(QString szID);
@@ -54,10 +54,10 @@ public:
     static void forgetStoredCommands(QObject* pTarget);
     static enum SECoP_S_error getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
                                                SECoP_dataPtr* ppValue);
-    static void putCommandAnswer(qulonglong llId, enum SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
-                                 const SECoP_dataPtr pSigma, double dblTimestamp);
-    static void putCommandAnswer2(qulonglong llId, enum SECoP_S_error iErrorCode, QByteArray szValue,
-                                  QByteArray szSigma, double dblTimestamp);
+    static enum SECoP_S_error putCommandAnswer(qulonglong llId, enum SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
+                                               const SECoP_dataPtr pSigma, double dblTimestamp);
+    static enum SECoP_S_error putCommandAnswer2(qulonglong llId, enum SECoP_S_error iErrorCode, QByteArray szValue,
+                                                QByteArray szSigma, double dblTimestamp);
     static void showErrors();
     static void logAddConnection(SECoP_S_Node* pNode, QTcpSocket* pClient);
     static void logRemoveConnection(QTcpSocket* pClient);
@@ -82,9 +82,9 @@ private slots:
     void getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
                           SECoP_dataPtr* ppValue, SECoP_S_error* piResult);
     void putCommandAnswerSlot(qulonglong llId, SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
-                              const SECoP_dataPtr pSigma, double dblTimestamp);
+                              const SECoP_dataPtr pSigma, double dblTimestamp, SECoP_S_error *piResult);
     void putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCode, QByteArray szValue, QByteArray szSigma,
-                               double dblTimestamp);
+                               double dblTimestamp, SECoP_S_error *piResult);
 
 private:
     void storeCommand(quint64 qwRequestId, QObject *pTarget, SECoP_S_Node* pNode, SECoP_S_Module* pModule, SECoP_S_action iAction,
@@ -147,8 +147,8 @@ private:
     QMutex*              m_pMutex;
     /// a timer which checks stored and executed actions for timeouts
     QTimer*              m_pSessionCleanUpTimer;
-    /// the Git hash of this library
-    QByteArray           m_szGitVersion;
+    /// VCS marker and the Git hash or SVN revision of this library
+    QByteArray           m_szVcsVersion;
     /// flag, if library creates many new threads
     bool                 m_bManyThreads;
     /// the singleton instance

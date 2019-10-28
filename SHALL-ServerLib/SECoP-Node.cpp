@@ -61,8 +61,8 @@ SECoP_S_Node::SECoP_S_Node(QString szNodeID, QString szDesc, QHostAddress addres
     enum SECoP_S_error iError(SECoP_S_SUCCESS);
     addProperty(QString("equipment_id"), CSECoPbaseType::simpleString(szNodeID.toUtf8()), false, &iError);
     addProperty(QString("description"), CSECoPbaseType::simpleString(szDesc.toUtf8()), false, &iError);
-    addProperty(QString("firmware"), CSECoPbaseType::simpleString(QString("SHALL server library (Git %1)").
-                arg(SECoP_S_Main::getGitVersion().constData()).toUtf8()), true, &iError);
+    addProperty(QString("firmware"), CSECoPbaseType::simpleString(QString("SHALL server library (%1)").
+                arg(SECoP_S_Main::getVcsVersion().constData()).toUtf8()), true, &iError);
 }
 
 /**
@@ -598,7 +598,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
                 bAppendAccOrder = false;//do not append moduleorder
                 szMessages.append(checkOrder(bError, pModule, (pValue != nullptr) ? pValue.get() : nullptr));
             }
-            else if (!szKey.compare("interface_class", Qt::CaseInsensitive))
+            else if (!szKey.compare("interface_classes", Qt::CaseInsensitive))
                 szMessages.append(checkInterfaceClass(bError, pModule, pProperty));
             else if (!szKey.compare("visibility", Qt::CaseInsensitive))
             {
@@ -693,7 +693,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
                 if (pValue.get() == nullptr)
                 {
                     bError = true;
-                    szMessages.append(QString("%1 has an invalid data type").arg(szParameterName));
+                    szMessages.append(QString("\n%1 has an invalid data type").arg(szParameterName));
                 }
                 // insert parameter properties
                 bool bConstant(false);
@@ -736,7 +736,7 @@ void SECoP_S_Node::nodeComplete(SECoP_S_error* piResult)
                 if (pDatatype != nullptr)
                 {
                     const SECoP_dataPtr value(pParameter->value());
-                    if (!value->isValid())
+                    if (!value.get() || !value->isValid())
                     {
                         szMessages.append(QString("\ninvalid datainfo of %1").arg(szParameterName));
                         bError = true;
@@ -1177,18 +1177,18 @@ QString SECoP_S_Node::checkDatatype(bool& bError, QString szName, const CSECoPba
 }
 
 /**
- * \brief This function checks the property "interface_class". It understands the following:
+ * \brief This function checks the property "interface_classes". It understands the following:
  *        - readable (has to contain parameters "value" and "status" with at least "idle")
  *        - writable (is a readable plus "target" parameter)
  *        - drivable (is a writable plus "stop" command and status with at least "busy")
  * \param[in,out] bError  flag, if there is/was any error
  * \param[in]     pModule module to check
- * \param[in]     pIFC    "interface_class" property
+ * \param[in]     pIFC    "interface_classes" property
  * \return a human readable error message
  */
 QString SECoP_S_Node::checkInterfaceClass(bool& bError, const SECoP_S_Module* pModule, const SECoP_S_Property* pIFC)
 {
-    // check interface_class
+    // check interface_classes
     const SECoP_dataPtr pValue(pIFC->getValue());
     const CSECoPstring* pString(nullptr);
     SECoP_json vIFC;
@@ -1302,13 +1302,13 @@ QString SECoP_S_Node::checkInterfaceClass(bool& bError, const SECoP_S_Module* pM
     else if (iType < 0 || !bCommunicator)
     {
         bError = true;
-        return QString("\nmodule \"%1\" has an invalid property \"interface_class\"");
+        return QString("\nmodule \"%1\" has an invalid property \"interface_classes\"").arg(pModule->getModuleID());
     }
     return QString();
 
 wrongIFCtype:
     bError = true;
-    return QString("\nproperty \"interface_class\" of module \"%1\" is not a JSON array of strings").arg(pModule->getModuleID());
+    return QString("\nproperty \"interface_classes\" of module \"%1\" is not a JSON array of strings").arg(pModule->getModuleID());
 
 wrongStatus:
     bError = true;

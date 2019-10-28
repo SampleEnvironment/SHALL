@@ -14,7 +14,12 @@ INCLUDEPATH += ../SHALL-VariantLib
 DEFINES += SHALL_LIBRARY
 
 GITVERSION=$$system(git describe --always --abbrev=40)
-!isEmpty(GITVERSION) {
+isEmpty(GITVERSION) {
+  SVNVERSION=$$system(svnversion .)
+!isEmpty(SVNVERSION) {
+  DEFINES += SVNVERSION=\"\\\"$$SVNVERSION\\\"\"
+}
+} else {
   DEFINES += GITVERSION=\"\\\"$$GITVERSION\\\"\"
 }
 

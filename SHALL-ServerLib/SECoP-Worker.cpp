@@ -693,13 +693,13 @@ void SECoP_S_Worker::parseData(QString szData)
     }
     else if (szSECoPCmd.compare("help", Qt::CaseInsensitive) == 0)
     {
-        // interactive help with Git hash
-        QByteArray szGitVersion(SECoP_S_Main::getGitVersion());
+        // interactive help
+        QByteArray szVcsVersion(SECoP_S_Main::getVcsVersion());
         szData = "commands are: *IDN?, ping, describe, change, read, do, activate, deactivate and help";
-        if (!szGitVersion.isEmpty())
+        if (!szVcsVersion.isEmpty())
         {
-            szData.append(". Git ");
-            szData.append(szGitVersion);
+            szData.append(". ");
+            szData.append(szVcsVersion);
         }
         writeData(szData);
     }

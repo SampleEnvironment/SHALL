@@ -72,45 +72,70 @@ CSECoPbaseType* SECoP_V_create(const char* szDescription)
 /*
  * \brief Function to create a simple boolean value for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] bValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType* SECoP_V_createSimpleBool()
+CSECoPbaseType* SECoP_V_createSimpleBool(long long bValue)
 {
-    return new CSECoPsimpleDouble();
+    CSECoPsimpleBool* pResult(new CSECoPsimpleBool);
+    if (pResult)
+    {
+        if (pResult->setValue(bValue))
+            return pResult;
+        delete pResult;
+    }
+    return nullptr;
 }
 
 /*
  * \brief Function to create a simple double value (64bit without limits) for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] dValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType* SECoP_V_createSimpleDouble()
+CSECoPbaseType* SECoP_V_createSimpleDouble(double dValue)
 {
-    return new CSECoPsimpleBool();
+    CSECoPsimpleDouble* pResult(new CSECoPsimpleDouble);
+    if (pResult)
+    {
+        if (pResult->setValue(dValue))
+            return pResult;
+        delete pResult;
+    }
+    return nullptr;
 }
 
 /*
  * \brief Function to create a simple integer value (signed 64bit) for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] llValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType* SECoP_V_createSimpleInteger()
+CSECoPbaseType* SECoP_V_createSimpleInteger(long long llValue)
 {
-    return new CSECoPsimpleInt();
+    CSECoPsimpleInt* pResult(new CSECoPsimpleInt);
+    if (pResult)
+    {
+        if (pResult->setValue(llValue))
+            return pResult;
+        delete pResult;
+    }
+    return nullptr;
 }
 
 /*
  * \brief Function to create a simple scaled integer value (signed 64bit) for convenience in SECoP.
  * \ingroup expfunc
  * \param[in] dScale scaling factor (>0.0)
+ * \param[in] llValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType* SECoP_V_createSimpleScaled(double dScale)
+CSECoPbaseType* SECoP_V_createSimpleScaled(double dScale, long long llValue)
 {
     CSECoPsimpleScaled* pResult(new CSECoPsimpleScaled());
     if (pResult)
     {
-        if (pResult->setScale(dScale))
+        if (pResult->setScale(dScale) && static_cast<CSECoPsimpleInt*>(pResult)->setValue(llValue))
             return pResult;
         delete pResult;
     }
@@ -122,9 +147,16 @@ CSECoPbaseType* SECoP_V_createSimpleScaled(double dScale)
  * \ingroup expfunc
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType* SECoP_V_createSimpleString()
+CSECoPbaseType* SECoP_V_createSimpleString(const char* szValue)
 {
-    return new CSECoPstring(SECoP_VT_STRING);
+    CSECoPstring* pResult(new CSECoPstring(SECoP_VT_STRING));
+    if (pResult)
+    {
+        if (!szValue || pResult->setValue(QByteArray(szValue)))
+            return pResult;
+        delete pResult;
+    }
+    return nullptr;
 }
 
 /*
@@ -321,9 +353,9 @@ void SECoP_V_destroy(CSECoPbaseType** ppData)
  * \ingroup expfunc
  * \param[out] ppDst destination (pointer will be allocated)
  * \param[in]  pSrc  source data
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_copy(CSECoPbaseType** ppDst, const CSECoPbaseType* pSrc)
+int SECoP_V_copy(CSECoPbaseType** ppDst, const CSECoPbaseType* pSrc)
 {
     if (pSrc == nullptr || ppDst == nullptr || !SECoP_V_g_huItems.contains(pSrc))
         return false;
@@ -781,10 +813,10 @@ static bool SECoP_V_getInfoHelper(const CSECoPbaseType* pData, unsigned int* puP
  * \param[out] piType    data type
  * \param[out] puCount   count of elements
  * \param[out] pszName   name of data
- * \return true, if information was accessible; false, if data or uPosition was invalid (end of data reached)
+ * \return 1, if information was accessible; 0, if data or uPosition was invalid (end of data reached)
  */
-bool SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
-                     unsigned int* puCount, const char** pszName)
+int SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
+                    unsigned int* puCount, const char** pszName)
 {
     const CSECoPbaseType* pItem(nullptr);
     SECoP_V_type iType(SECoP_VT_NONE);
@@ -795,13 +827,13 @@ bool SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPosition, enum S
     if (pszName != nullptr)
         *pszName = nullptr;
     if (!SECoP_V_getInfoHelper(pData, &uPosition, puCount, &pItem, pszName) || uPosition > 0)
-        return false;
+        return 0;
     if (pItem == nullptr)
-        return false;
+        return 0;
     iType = pItem->getType();
     if (piType != nullptr)
         *piType = iType;
-    return true;
+    return 1;
 }
 
 /*
@@ -822,14 +854,14 @@ bool SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPosition, enum S
  * \param[out]    puCount   count of elements
  * \param[out]    szName    name buffer
  * \param[in,out] puLen     size of "name" buffer (in), name length (out)
- * \return true, if information was accessible; false, if data or uPosition was invalid (end of data reached)
+ * \return 1, if information was accessible; 0, if data or uPosition was invalid (end of data reached)
  */
-bool SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
-                      unsigned int* puCount, char* szName, unsigned int* puLen)
+int SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
+                     unsigned int* puCount, char* szName, unsigned int* puLen)
 {
     const char* szTmp(nullptr);
     if (!SECoP_V_getInfo(pData, uPosition, piType, puCount, &szTmp))
-        return false;
+        return 0;
     size_t iLen(0), iLenResult;
     if (szTmp != nullptr)
         iLen = strlen(szTmp);
@@ -845,7 +877,7 @@ bool SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPosition, enum 
         }
         *puLen = static_cast<unsigned int>(iLenResult);
     }
-    return true;
+    return 1;
 }
 
 /*
@@ -858,37 +890,37 @@ bool SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPosition, enum 
  * \param[in] uPosition zero-based position to data part
  * \param[in] uIndex    zero-based array index into data part
  * \param[in] dblValue  new value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyDouble(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, double dblValue)
+int SECoP_V_modifyDouble(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, double dblValue)
 {
     const CSECoPbaseType* pItemTmp(nullptr);
     if (!SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItemTmp, nullptr) || pItemTmp == nullptr)
-        return false;
+        return 0;
     CSECoPbaseType* pItem(const_cast<CSECoPbaseType*>(pItemTmp));
     if (pItem == nullptr || uPosition > 0)
-        return false;
+        return 0;
     CSECoPsimpleScaled* pSScaled(dynamic_cast<CSECoPsimpleScaled*>(pItem));
     if (pSScaled != nullptr)
     {
         if (uIndex > 0)
-            return false;
-        return pSScaled->setValue(dblValue);
+            return 0;
+        return pSScaled->setValue(dblValue) ? 1 : 0;
     }
     CSECoPsimpleType<double>* pSDouble(dynamic_cast<CSECoPsimpleType<double>*>(pItem));
     if (pSDouble != nullptr)
     {
         if (uIndex > 0)
-            return false;
-        return pSDouble->setValue(dblValue);
+            return 0;
+        return pSDouble->setValue(dblValue) ? 1 : 0;
     }
     CSECoParrayScaled* pAScaled(dynamic_cast<CSECoParrayScaled*>(pItem));
     if (pAScaled != nullptr)
-        return pAScaled->setValue(uIndex, dblValue);
+        return pAScaled->setValue(uIndex, dblValue) ? 1 : 0;
     CSECoParraySimple<double>* pADouble(dynamic_cast<CSECoParraySimple<double>*>(pItem));
     if (pADouble != nullptr)
-        return pADouble->setValue(uIndex, dblValue);
-    return false;
+        return pADouble->setValue(uIndex, dblValue) ? 1 : 0;
+    return 0;
 }
 
 /*
@@ -902,27 +934,27 @@ bool SECoP_V_modifyDouble(CSECoPbaseType* pData, unsigned int uPosition, unsigne
  * \param[in] uPosition zero-based position to data part
  * \param[in] uIndex    zero-based array index into data part
  * \param[in] llValue   new value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyInteger(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, long long llValue)
+int SHALL_EXPORT SECoP_V_modifyInteger(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, long long llValue)
 {
     const CSECoPbaseType* pItemTmp(nullptr);
     if (!SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItemTmp, nullptr) || pItemTmp == nullptr)
-        return false;
+        return 0;
     CSECoPbaseType* pItem(const_cast<CSECoPbaseType*>(pItemTmp));
     if (pItem == nullptr || uPosition > 0)
-        return false;
+        return 0;
     CSECoPsimpleType<long long>* pSInt(dynamic_cast<CSECoPsimpleType<long long>*>(pItem));
     if (pSInt != nullptr)
     {
         if (uIndex > 0)
-            return false;
-        return pSInt->setValue(llValue);
+            return 0;
+        return pSInt->setValue(llValue) ? 1 : 0;
     }
     CSECoParraySimple<long long>* pAInt(dynamic_cast<CSECoParraySimple<long long>*>(pItem));
     if (pAInt != nullptr)
-        return pAInt->setValue(uIndex, llValue);
-    return false;
+        return pAInt->setValue(uIndex, llValue) ? 1 : 0;
+    return 0;
 }
 
 /*
@@ -932,37 +964,37 @@ bool SECoP_V_modifyInteger(CSECoPbaseType* pData, unsigned int uPosition, unsign
  * \param[in]  uPosition zero-based position to data part (complete array)
  * \param[in]  uIndex    zero-based index into double array
  * \param[out] pdblValue memory location which will get the double value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_getDouble(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, double* pdblValue)
+int SECoP_V_getDouble(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, double* pdblValue)
 {
     const CSECoPbaseType* pItemTmp(nullptr);
     if (!SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItemTmp, nullptr) || pItemTmp == nullptr)
-        return false;
+        return 0;
     CSECoPbaseType* pItem(const_cast<CSECoPbaseType*>(pItemTmp));
     if (pItem == nullptr || uPosition > 0)
-        return false;
+        return 0;
     CSECoPsimpleScaled* pSScaled(dynamic_cast<CSECoPsimpleScaled*>(pItem));
     if (pSScaled != nullptr)
     {
         if (uIndex > 0)
-            return false;
-        return pSScaled->getValue(*pdblValue);
+            return 0;
+        return pSScaled->getValue(*pdblValue) ? 1 : 0;
     }
     CSECoParrayScaled* pAScaled(dynamic_cast<CSECoParrayScaled*>(pItem));
     if (pAScaled != nullptr)
-        return pAScaled->getValue(uIndex, *pdblValue);
+        return pAScaled->getValue(uIndex, *pdblValue) ? 1 : 0;
     CSECoPsimpleType<double>* pSDouble(dynamic_cast<CSECoPsimpleType<double>*>(pItem));
     if (pSDouble != nullptr)
     {
         if (uIndex > 0)
-            return false;
-        return pSDouble->getValue(*pdblValue);
+            return 0;
+        return pSDouble->getValue(*pdblValue) ? 1 : 0;
     }
     CSECoParraySimple<double>* pADouble(dynamic_cast<CSECoParraySimple<double>*>(pItem));
     if (pADouble != nullptr)
-        return pADouble->getValue(uIndex, *pdblValue);
-    return false;
+        return pADouble->getValue(uIndex, *pdblValue) ? 1 : 0;
+    return 0;
 }
 
 /*
@@ -972,27 +1004,27 @@ bool SECoP_V_getDouble(const CSECoPbaseType* pData, unsigned int uPosition, unsi
  * \param[in]  uPosition zero-based position to data part (complete array)
  * \param[in]  uIndex    zero-based index into integer array
  * \param[out] pllValue  memory location which will get the integer value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_getInteger(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, long long* pllValue)
+int SECoP_V_getInteger(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex, long long* pllValue)
 {
     const CSECoPbaseType* pItemTmp(nullptr);
     if (!SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItemTmp, nullptr) || pItemTmp == nullptr)
-        return false;
+        return 0;
     CSECoPbaseType* pItem(const_cast<CSECoPbaseType*>(pItemTmp));
     if (pItem == nullptr || uPosition > 0)
-        return false;
+        return 0;
     CSECoPsimpleType<long long>* pSInt(dynamic_cast<CSECoPsimpleType<long long>*>(pItem));
     if (pSInt != nullptr)
     {
         if (uIndex > 0)
-            return false;
-        return pSInt->getValue(*pllValue);
+            return 0;
+        return pSInt->getValue(*pllValue) ? 1 : 0;
     }
     CSECoParraySimple<long long>* pAInt(dynamic_cast<CSECoParraySimple<long long>*>(pItem));
     if (pAInt != nullptr)
-        return pAInt->getValue(uIndex, *pllValue);
-    return false;
+        return pAInt->getValue(uIndex, *pllValue) ? 1 : 0;
+    return 0;
 }
 
 /*
@@ -1091,10 +1123,10 @@ const char* SECoP_V_getEnumeration(const CSECoPbaseType* pData, unsigned int uPo
  * \param[in] uPosition  zero-based position to data part
  * \param[in] llEnumVal  enumeration value
  * \param[in] szEnumName enumeration name
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_putEnumeration(CSECoPbaseType* pData, unsigned int uPosition,
-                            long long llEnumVal, const char* szEnumName)
+int SECoP_V_putEnumeration(CSECoPbaseType* pData, unsigned int uPosition,
+                           long long llEnumVal, const char* szEnumName)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
@@ -1103,10 +1135,10 @@ bool SECoP_V_putEnumeration(CSECoPbaseType* pData, unsigned int uPosition,
         {
             CSECoPenumBase* pEnum(dynamic_cast<CSECoPenumBase*>(const_cast<CSECoPbaseType*>(pItem)));
             if (pEnum != nullptr)
-                return pEnum->addItem(llEnumVal, szEnumName);
+                return pEnum->addItem(llEnumVal, szEnumName) ? 1 : 0;
         }
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1147,9 +1179,9 @@ enum SECoP_V_compareResult SECoP_V_compare(const CSECoPbaseType* pData1, const C
  * \param[in]  uPosition   zero-based position to data part
  * \param[out] pdblMinimum minimum value (or NaN)
  * \param[out] pdblMaximum maximum value (minimum <= maximum or NaN)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned int uPosition, double* pdblMinimum, double* pdblMaximum)
+int SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned int uPosition, double* pdblMinimum, double* pdblMaximum)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
@@ -1163,10 +1195,10 @@ bool SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned int uPosition
                 *pdblMinimum = dblMinimum;
             if (pdblMaximum != nullptr)
                 *pdblMaximum = dblMaximum;
-            return true;
+            return 1;
         }
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1176,18 +1208,18 @@ bool SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned int uPosition
  * \param[in] uPosition  zero-based position to data part
  * \param[in] dblMinimum minimum value (or NaN)
  * \param[in] dblMaximum maximum value (minimum <= maximum or NaN)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyMinMaxDouble(CSECoPbaseType* pData, unsigned int uPosition, double dblMinimum, double dblMaximum)
+int SECoP_V_modifyMinMaxDouble(CSECoPbaseType* pData, unsigned int uPosition, double dblMinimum, double dblMaximum)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
     {
         CSECoPminmaxType<double>* pMinMax(dynamic_cast<CSECoPminmaxType<double>*>(const_cast<CSECoPbaseType*>(pItem)));
         if (pMinMax != nullptr && uPosition < 1)
-            return pMinMax->setMinMaxValue(dblMinimum, dblMaximum);
+            return pMinMax->setMinMaxValue(dblMinimum, dblMaximum) ? 1 : 0;
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1197,9 +1229,9 @@ bool SECoP_V_modifyMinMaxDouble(CSECoPbaseType* pData, unsigned int uPosition, d
  * \param[in]  uPosition   zero-based position to data part
  * \param[out] pllMinimum minimum value
  * \param[out] pllMaximum maximum value (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned int uPosition, long long* pllMinimum, long long* pllMaximum)
+int SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned int uPosition, long long* pllMinimum, long long* pllMaximum)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
@@ -1213,10 +1245,10 @@ bool SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned int uPositio
                 *pllMinimum = llMinimum;
             if (pllMaximum != nullptr)
                 *pllMaximum = llMaximum;
-            return true;
+            return 1;
         }
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1226,18 +1258,18 @@ bool SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned int uPositio
  * \param[in] uPosition zero-based position to data part
  * \param[in] llMinimum minimum value
  * \param[in] llMaximum maximum value (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyMinMaxInteger(CSECoPbaseType* pData, unsigned int uPosition, long long llMinimum, long long llMaximum)
+int SECoP_V_modifyMinMaxInteger(CSECoPbaseType* pData, unsigned int uPosition, long long llMinimum, long long llMaximum)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
     {
         CSECoPminmaxType<long long>* pMinMax(dynamic_cast<CSECoPminmaxType<long long>*>(const_cast<CSECoPbaseType*>(pItem)));
         if (pMinMax != nullptr && uPosition < 1)
-            return pMinMax->setMinMaxValue(llMinimum, llMaximum);
+            return pMinMax->setMinMaxValue(llMinimum, llMaximum) ? 1 : 0;
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1248,10 +1280,10 @@ bool SECoP_V_modifyMinMaxInteger(CSECoPbaseType* pData, unsigned int uPosition, 
  * \param[out] puLength        current array size (minimum <= current <= maximum)
  * \param[out] puMinimumLength minimum array size (>=0)
  * \param[out] puMaximumLength maximum array size (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int* puLength,
-                            unsigned int* puMinimumLength, unsigned int* puMaximumLength)
+int SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int* puLength,
+                           unsigned int* puMinimumLength, unsigned int* puMaximumLength)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
@@ -1267,10 +1299,10 @@ bool SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned int uPosition,
                 *puMinimumLength = uMinimum;
             if (puMaximumLength != nullptr)
                 *puMaximumLength = uMaximum;
-            return true;
+            return 1;
         }
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1283,10 +1315,10 @@ bool SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned int uPosition,
  * \param[in] uLength        current size (minimum <= current <= maximum)
  * \param[in] uMinimumLength minimum array size (>=0)
  * \param[in] uMaximumLength maximum array size (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uLength,
-                               unsigned int uMinimumLength, unsigned int uMaximumLength)
+int SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uLength,
+                              unsigned int uMinimumLength, unsigned int uMaximumLength)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
@@ -1296,11 +1328,11 @@ bool SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int uPosition, un
         {
             if (uMinimumLength <= uMaximumLength)
                 if (!pArray->setMinMaxSize(uMinimumLength, uMaximumLength))
-                    return false;
-            return pArray->setSize(uLength);
+                    return 0;
+            return pArray->setSize(uLength) ? 1 : 0;
         }
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1311,18 +1343,18 @@ bool SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int uPosition, un
  * \param[in]     uPosition zero-based position to SECoP_VT_STRING, SECoP_VT_BLOB or SECoP_VT_JSON
  * \param[in]     szValue   string value to replace
  * \param[in]     iSize     length of string in bytes or -1 for null-terminated string
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyString(CSECoPbaseType* pData, unsigned int uPosition, const char* szValue, int iSize)
+int SECoP_V_modifyString(CSECoPbaseType* pData, unsigned int uPosition, const char* szValue, int iSize)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
     {
         CSECoPstring* pString(dynamic_cast<CSECoPstring*>(const_cast<CSECoPbaseType*>(pItem)));
         if (pString != nullptr && uPosition < 1)
-            return pString->setValue(QByteArray(szValue, iSize));
+            return pString->setValue(QByteArray(szValue, iSize)) ? 1 : 0;
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1331,9 +1363,9 @@ bool SECoP_V_modifyString(CSECoPbaseType* pData, unsigned int uPosition, const c
  * \param[in]  pData     CSECoPbaseType to read
  * \param[in]  uPosition zero-based position to data part
  * \param[out] pdblValue memory location which will get the scale factor
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_getScale(const CSECoPbaseType* pData, unsigned int uPosition, double* pdblValue)
+int SECoP_V_getScale(const CSECoPbaseType* pData, unsigned int uPosition, double* pdblValue)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
@@ -1344,10 +1376,10 @@ bool SECoP_V_getScale(const CSECoPbaseType* pData, unsigned int uPosition, doubl
             double dScale(pScale->getScale());
             if (pdblValue != nullptr)
                 *pdblValue = dScale;
-            return true;
+            return 1;
         }
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -1359,18 +1391,18 @@ bool SECoP_V_getScale(const CSECoPbaseType* pData, unsigned int uPosition, doubl
  * \param[in,out] pData          CSECoPbaseType to modify
  * \param[in]     uPosition      zero-based position to data part
  * \param[in]     dblScaleFactor new scaling factor (example: integer=999, scale=0.1 -> means 99.9 for transport)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SECoP_V_modifyScale(CSECoPbaseType* pData, unsigned int uPosition, double dblScale)
+int SECoP_V_modifyScale(CSECoPbaseType* pData, unsigned int uPosition, double dblScale)
 {
     const CSECoPbaseType* pItem(nullptr);
     if (SECoP_V_getInfoHelper(pData, &uPosition, nullptr, &pItem, nullptr))
     {
         CSECoPscaledBase* pScale(dynamic_cast<CSECoPscaledBase*>(const_cast<CSECoPbaseType*>(pItem)));
         if (pScale != nullptr && uPosition < 1)
-            return pScale->setScale(dblScale);
+            return pScale->setScale(dblScale) ? 1 : 0;
     }
-    return false;
+    return 0;
 }
 
 /*
@@ -6414,7 +6446,7 @@ bool CSECoPstring::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
             aszDelKeys.append("isUTF8");
     }
     else
-        m_bIsUTF8 = false;
+        m_bIsUTF8 = true;
     return true;
 }
 

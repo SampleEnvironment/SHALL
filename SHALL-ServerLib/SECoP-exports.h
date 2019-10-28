@@ -228,7 +228,7 @@ void SHALL_EXPORT SECoP_S_showErrors();
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter(const char* szParameterName, const CSECoPbaseType* pData,
-                                                            const CSECoPbaseType* pSigma, double dblTimestamp);
+                                                        const CSECoPbaseType* pSigma, double dblTimestamp);
 
 /**
  * \brief Call SECoP_S_updateParameter, if you have a new value for an existing
@@ -244,7 +244,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter(const char* szParameterN
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter2(const char* szParameterName, const char* szValue, int iValueSize,
-                                                           const char* szSigma, int iSigmaSize, double dblTimestamp);
+                                                         const char* szSigma, int iSigmaSize, double dblTimestamp);
 
 /**
  * \brief When polling is enabled (\ref SECoP_S_createNode) call SECoP_S_getStoredCommand
@@ -261,7 +261,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter2(const char* szParameter
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
-                                                             char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue);
+                                                         char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue);
 
 /**
  * \brief When polling is enabled (\ref SECoP_S_createNode) call SECoP_S_getStoredCommand2
@@ -279,8 +279,8 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pll
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand2(unsigned long long* pllId, enum SECoP_S_action *piAction,
-                                                              char* szParameter, int* piParameterSize, char* szValue,
-                                                              int* piValueSize);
+                                                          char* szParameter, int* piParameterSize, char* szValue,
+                                                          int* piValueSize);
 
 /**
  * \brief Call SECoP_S_putCommandAnswer, when \ref SECoP_S_getStoredCommand provided
@@ -293,10 +293,11 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand2(unsigned long long* pl
  * \param[in] pValue       new value of the parameter or command result
  * \param[in] pSigma       error of value of the parameter
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
+ * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-void SHALL_EXPORT SECoP_S_putCommandAnswer(unsigned long long llId, enum SECoP_S_error iErrorCode,
-                                               const CSECoPbaseType* pValue, const CSECoPbaseType* pSigma,
-                                               double dblTimestamp);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_putCommandAnswer(unsigned long long llId, enum SECoP_S_error iErrorCode,
+                                                         const CSECoPbaseType* pValue, const CSECoPbaseType* pSigma,
+                                                         double dblTimestamp);
 
 /**
  * \brief Call SECoP_S_putCommandAnswer2, when \ref SECoP_S_getStoredCommand2 provided
@@ -311,9 +312,10 @@ void SHALL_EXPORT SECoP_S_putCommandAnswer(unsigned long long llId, enum SECoP_S
  * \param[in] szSigma      error of value of the parameter
  * \param[in] iSigmaSize   size of the JSON sigma value or 0 (no sigma value)
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
+ * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-void SHALL_EXPORT SECoP_S_putCommandAnswer2(unsigned long long llId, enum SECoP_S_error iErrorCode, const char* szValue,
-                                                int iValueSize, const char* szSigma, int iSigmaSize, double dblTimestamp);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_putCommandAnswer2(unsigned long long llId, enum SECoP_S_error iErrorCode,
+                const char* szValue, int iValueSize, const char* szSigma, int iSigmaSize, double dblTimestamp);
 
 /**
  * \brief Call SECoP_S_getErrorString to convert a SECoP_S_error value into a human

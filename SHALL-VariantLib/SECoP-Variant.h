@@ -228,38 +228,43 @@ CSECoPbaseType SHALL_EXPORT * SECoP_V_create(const char* szDescription);
 /**
  * \brief Function to create a simple boolean value for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] bValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleBool();
+CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleBool(long long bValue);
 
 /**
  * \brief Function to create a simple double value (64bit without limits) for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] dValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleDouble();
+CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleDouble(double dValue);
 
 /**
  * \brief Function to create a simple integer value (signed 64bit) for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] llValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleInteger();
+CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleInteger(long long llValue);
 
 /**
  * \brief Function to create a simple scaled integer value (signed 64bit) for convenience in SECoP.
  * \ingroup expfunc
  * \param[in] dScale scaling factor (>0.0)
+ * \param[in] llValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleScaled(double dScale);
+CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleScaled(double dScale, long long llValue);
 
 /**
  * \brief Function to create a simple string value for convenience in SECoP.
  * \ingroup expfunc
+ * \param[in] szValue new value to store
  * \return a new CSECoPbaseType structure or NULL in case of errors
  */
-CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleString();
+CSECoPbaseType SHALL_EXPORT * SECoP_V_createSimpleString(const char* szValue);
 
 /**
  * \brief Function to create a SECoP status for convenience in SECoP.
@@ -312,9 +317,9 @@ void SHALL_EXPORT SECoP_V_destroy(CSECoPbaseType** ppData);
  * \ingroup expfunc
  * \param[out] ppDst destination (pointer will be allocated)
  * \param[in]  pSrc  source data
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_copy(CSECoPbaseType** ppDst, const CSECoPbaseType* pSrc);
+int SHALL_EXPORT SECoP_V_copy(CSECoPbaseType** ppDst, const CSECoPbaseType* pSrc);
 
 /**
  * \brief print SECoP data to file using SECoP_V_printStream
@@ -369,10 +374,10 @@ bool SHALL_EXPORT SECoP_V_printStream(QTextStream &rOutput, const CSECoPbaseType
  * \param[out] piType    data type
  * \param[out] puCount   count of elements
  * \param[out] pszName   name of data
- * \return true, if information was accessible; false, if data or uPosition was invalid (end of data reached)
+ * \return 1, if information was accessible; 0, if data or uPosition was invalid (end of data reached)
  */
-bool SHALL_EXPORT SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
-                                      unsigned int* puCount, const char** pszName);
+int SHALL_EXPORT SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
+                                 unsigned int* puCount, const char** pszName);
 
 /**
  * \brief With this function you can get read access to any data stored in CSECoPbaseType.
@@ -392,10 +397,10 @@ bool SHALL_EXPORT SECoP_V_getInfo(const CSECoPbaseType* pData, unsigned int uPos
  * \param[out]    puCount   count of elements
  * \param[out]    szName    name buffer
  * \param[in,out] puLen     size of "szName" buffer (in), name length (out)
- * \return true, if information was accessible; false, if data or uPosition was invalid (end of data reached)
+ * \return 1, if information was accessible; 0, if data or uPosition was invalid (end of data reached)
  */
-bool SHALL_EXPORT SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
-                                       unsigned int* puCount, char* szName, unsigned int* puLen);
+int SHALL_EXPORT SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPosition, enum SECoP_V_type* piType,
+                                  unsigned int* puCount, char* szName, unsigned int* puLen);
 
 /**
  * \brief Set minimum and maximum double value.
@@ -405,10 +410,10 @@ bool SHALL_EXPORT SECoP_V_getInfo2(const CSECoPbaseType* pData, unsigned int uPo
  * \param[in] uPosition  zero-based position to data part
  * \param[in] dblMinimum minimum value (or NaN)
  * \param[in] dblMaximum maximum value (minimum <= maximum or NaN)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyMinMaxDouble(CSECoPbaseType* pData, unsigned int uPosition,
-                                                 double dblMinimum, double dblMaximum);
+int SHALL_EXPORT SECoP_V_modifyMinMaxDouble(CSECoPbaseType* pData, unsigned int uPosition,
+                                            double dblMinimum, double dblMaximum);
 
 /**
  * \brief Set minimum and maximum integer value.
@@ -418,10 +423,10 @@ bool SHALL_EXPORT SECoP_V_modifyMinMaxDouble(CSECoPbaseType* pData, unsigned int
  * \param[in] uPosition zero-based position to data part
  * \param[in] llMinimum minimum value
  * \param[in] llMaximum maximum value (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyMinMaxInteger(CSECoPbaseType* pData, unsigned int uPosition,
-                                                  long long llMinimum, long long llMaximum);
+int SHALL_EXPORT SECoP_V_modifyMinMaxInteger(CSECoPbaseType* pData, unsigned int uPosition,
+                                             long long llMinimum, long long llMaximum);
 
 /**
  * \brief Set current size, minimum size and maximum size of array with the constraint: minimum <= current <= maximum
@@ -433,10 +438,10 @@ bool SHALL_EXPORT SECoP_V_modifyMinMaxInteger(CSECoPbaseType* pData, unsigned in
  * \param[in] uLength        current size (minimum <= current <= maximum)
  * \param[in] uMinimumLength minimum array size (>=0)
  * \param[in] uMaximumLength maximum array size (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uLength,
-                                                unsigned int uMinimumLength, unsigned int uMaximumLength);
+int SHALL_EXPORT SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int uPosition, unsigned int uLength,
+                                           unsigned int uMinimumLength, unsigned int uMaximumLength);
 
 /**
  * \brief Use this function to modify a specific double (numeric) value.
@@ -448,10 +453,10 @@ bool SHALL_EXPORT SECoP_V_modifyArrayLength(CSECoPbaseType* pData, unsigned int 
  * \param[in] uPosition zero-based position to data part
  * \param[in] uIndex    zero-based array index into data part
  * \param[in] dblValue  new value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyDouble(CSECoPbaseType* pData, unsigned int uPosition,
-                                           unsigned int uIndex, double dblValue);
+int SHALL_EXPORT SECoP_V_modifyDouble(CSECoPbaseType* pData, unsigned int uPosition,
+                                      unsigned int uIndex, double dblValue);
 
 /**
  * \brief Use this function to modify a specific integer (numeric) value.
@@ -464,10 +469,10 @@ bool SHALL_EXPORT SECoP_V_modifyDouble(CSECoPbaseType* pData, unsigned int uPosi
  * \param[in] uPosition zero-based position to data part
  * \param[in] uIndex    zero-based array index into data part
  * \param[in] llValue   new value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyInteger(CSECoPbaseType* pData, unsigned int uPosition,
-                                            unsigned int uIndex, long long llValue);
+int SHALL_EXPORT SECoP_V_modifyInteger(CSECoPbaseType* pData, unsigned int uPosition,
+                                       unsigned int uIndex, long long llValue);
 
 /**
  * \brief Use this function to modify the factor of a scaled integer.
@@ -478,10 +483,10 @@ bool SHALL_EXPORT SECoP_V_modifyInteger(CSECoPbaseType* pData, unsigned int uPos
  * \param[in,out] pData          CSECoPbaseType to modify
  * \param[in]     uPosition      zero-based position to data part
  * \param[in]     dblScaleFactor new scaling factor (example: integer=999, scale=0.1 -> means 99.9 for transport)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyScale(CSECoPbaseType* pData, unsigned int uPosition,
-                                          double dblScaleFactor);
+int SHALL_EXPORT SECoP_V_modifyScale(CSECoPbaseType* pData, unsigned int uPosition,
+                                     double dblScaleFactor);
 
 /**
  * \brief Use this function to replace existing string data inside the SECoP variant.
@@ -491,10 +496,10 @@ bool SHALL_EXPORT SECoP_V_modifyScale(CSECoPbaseType* pData, unsigned int uPosit
  * \param[in]     uPosition zero-based position to SECoP_VT_STRING, SECoP_VT_BLOB or SECoP_VT_JSON
  * \param[in]     szValue   string value to replace
  * \param[in]     iSize     length of string in bytes or -1 for null-terminated string
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_modifyString(CSECoPbaseType* pData, unsigned int uPosition,
-                                           const char* szValue, int iSize);
+int SHALL_EXPORT SECoP_V_modifyString(CSECoPbaseType* pData, unsigned int uPosition,
+                                      const char* szValue, int iSize);
 
 /**
  * \brief Read minimum and maximum array or data sizes.
@@ -505,11 +510,11 @@ bool SHALL_EXPORT SECoP_V_modifyString(CSECoPbaseType* pData, unsigned int uPosi
  * \param[out] puLength        current array size (minimum <= current <= maximum)
  * \param[out] puMinimumLength minimum array size (>=0)
  * \param[out] puMaximumLength maximum array size (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned int uPosition,
-                                             unsigned int* puLength, unsigned int* puMinimumLength,
-                                             unsigned int* puMaximumLength);
+int SHALL_EXPORT SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned int uPosition,
+                                        unsigned int* puLength, unsigned int* puMinimumLength,
+                                        unsigned int* puMaximumLength);
 
 /**
  * \brief Read minimum and maximum double value.
@@ -519,10 +524,10 @@ bool SHALL_EXPORT SECoP_V_getArrayLength(const CSECoPbaseType* pData, unsigned i
  * \param[in]  uPosition   zero-based position to data part
  * \param[out] pdblMinimum minimum value (or NaN)
  * \param[out] pdblMaximum maximum value (minimum <= maximum or NaN)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned int uPosition,
-                                              double* pdblMinimum, double* pdblMaximum);
+int SHALL_EXPORT SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned int uPosition,
+                                         double* pdblMinimum, double* pdblMaximum);
 
 /**
  * \brief Read minimum and maximum integer value.
@@ -532,10 +537,10 @@ bool SHALL_EXPORT SECoP_V_getMinMaxDouble(const CSECoPbaseType* pData, unsigned 
  * \param[in]  uPosition   zero-based position to data part
  * \param[out] pllMinimum minimum value
  * \param[out] pllMaximum maximum value (minimum <= maximum)
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned int uPosition,
-                                               long long* pllMinimum, long long* pllMaximum);
+int SHALL_EXPORT SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned int uPosition,
+                                          long long* pllMinimum, long long* pllMaximum);
 
 /**
  * \brief Use this function to read a single double value out of the SECoP variant.
@@ -545,10 +550,10 @@ bool SHALL_EXPORT SECoP_V_getMinMaxInteger(const CSECoPbaseType* pData, unsigned
  * \param[in]  uPosition zero-based position to data part (complete array)
  * \param[in]  uIndex    zero-based index into double array
  * \param[out] pdblValue memory location which will get the double value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_getDouble(const CSECoPbaseType* pData, unsigned int uPosition,
-                                        unsigned int uIndex, double* pdblValue);
+int SHALL_EXPORT SECoP_V_getDouble(const CSECoPbaseType* pData, unsigned int uPosition,
+                                   unsigned int uIndex, double* pdblValue);
 
 /**
  * \brief Use this function to read a single integer value out of the SECoP variant.
@@ -558,10 +563,10 @@ bool SHALL_EXPORT SECoP_V_getDouble(const CSECoPbaseType* pData, unsigned int uP
  * \param[in]  uPosition zero-based position to data part (complete array)
  * \param[in]  uIndex    zero-based index into integer array
  * \param[out] pllValue  memory location which will get the integer value
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_getInteger(const CSECoPbaseType* pData, unsigned int uPosition,
-                                         unsigned int uIndex, long long* pllValue);
+int SHALL_EXPORT SECoP_V_getInteger(const CSECoPbaseType* pData, unsigned int uPosition,
+                                    unsigned int uIndex, long long* pllValue);
 
 /**
  * \brief Use this function to read a string/blob value out of the SECoP variant.
@@ -574,7 +579,7 @@ bool SHALL_EXPORT SECoP_V_getInteger(const CSECoPbaseType* pData, unsigned int u
  * \return zero for errors, number of bytes needed (including a trailing NUL)
  */
 unsigned int SHALL_EXPORT SECoP_V_getString(const CSECoPbaseType* pData, unsigned int uPosition,
-                                                unsigned int uBufferSize, char* pszValue);
+                                            unsigned int uBufferSize, char* pszValue);
 
 /**
  * \brief Function to read the factor of a scaled integer out of the SECoP variant.
@@ -583,10 +588,10 @@ unsigned int SHALL_EXPORT SECoP_V_getString(const CSECoPbaseType* pData, unsigne
  * \param[in]  pData     CSECoPbaseType to read
  * \param[in]  uPosition zero-based position to data part
  * \param[out] pdblValue memory location which will get the scale factor
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_getScale(const CSECoPbaseType* pData, unsigned int uPosition,
-                                       double* pdblValue);
+int SHALL_EXPORT SECoP_V_getScale(const CSECoPbaseType* pData, unsigned int uPosition,
+                                  double* pdblValue);
 
 /**
  * \brief Return count of enumeration items in list or structure names.
@@ -609,7 +614,7 @@ unsigned int SHALL_EXPORT SECoP_V_getEnumStructCount(const CSECoPbaseType* pData
  * \return for valid index: enumeration name, for invalid index: NULL
  */
 const char SHALL_EXPORT * SECoP_V_getEnumeration(const CSECoPbaseType* pData, unsigned int uPosition,
-                                                     unsigned int uIndex, long long* pllEnumVal);
+                                                 unsigned int uIndex, long long* pllEnumVal);
 
 /**
  * \brief Return enumeration item from list with zero based index.
@@ -619,10 +624,10 @@ const char SHALL_EXPORT * SECoP_V_getEnumeration(const CSECoPbaseType* pData, un
  * \param[in]  uPosition  zero-based position to data part
  * \param[in]  llEnumVal  enumeration value
  * \param[in]  szEnumName enumeration name
- * \return true, if successful
+ * \return 0 on error, 1 on success
  */
-bool SHALL_EXPORT SECoP_V_putEnumeration(CSECoPbaseType* pData, unsigned int uPosition,
-                                             long long llEnumVal, const char* szEnumName);
+int SHALL_EXPORT SECoP_V_putEnumeration(CSECoPbaseType* pData, unsigned int uPosition,
+                                        long long llEnumVal, const char* szEnumName);
 
 /**
  * \brief Return name or struct item from any variant.
@@ -676,7 +681,7 @@ unsigned int SHALL_EXPORT SECoP_V_getAdditionalIndex(const CSECoPbaseType* pData
  * \return zero for errors, number of bytes needed (including a trailing NUL)
  */
 unsigned int SHALL_EXPORT SECoP_V_getAdditionalKey(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex,
-                                                       unsigned int uBufferSize, char* pszValue);
+                                                   unsigned int uBufferSize, char* pszValue);
 
 /**
  * \brief Retrieve a string of additional (string,json-array,json-object) items of a variant.
@@ -690,7 +695,7 @@ unsigned int SHALL_EXPORT SECoP_V_getAdditionalKey(const CSECoPbaseType* pData, 
  * \return zero for errors, number of bytes needed (including a trailing NUL)
  */
 unsigned int SHALL_EXPORT SECoP_V_getAdditionalString(const CSECoPbaseType* pData, unsigned int uPosition, unsigned int uIndex,
-                                                          unsigned int uBufferSize, char* pszValue);
+                                                      unsigned int uBufferSize, char* pszValue);
 
 /**
  * \brief Retrieve the numeric value as double of additional items of a variant.

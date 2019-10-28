@@ -107,15 +107,15 @@ void SECoP_S_StatusGui::startUp()
             move(screen.right() - size.width(), 0);
         }
     }
-    QByteArray szGitVersion(SECoP_S_Main::getGitVersion());
-    if (!szGitVersion.isEmpty())
+    QByteArray szVcsVersion(SECoP_S_Main::getVcsVersion());
+    if (!szVcsVersion.isEmpty())
     {
         QString szTitle(windowTitle());
         if (!szTitle.isEmpty())
             szTitle.append(" / ");
-        szTitle.append(szGitVersion);
+        szTitle.append(szVcsVersion);
         setWindowTitle(szTitle);
-        ui->eLog->appendPlainText(QString("Git %1").arg(szGitVersion.constData()));
+        ui->eLog->appendPlainText(QString("version: %1").arg(szVcsVersion.constData()));
     }
     showConnectionList();
     QTimer* pTimer = new QTimer(this);

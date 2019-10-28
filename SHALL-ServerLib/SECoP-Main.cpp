@@ -142,6 +142,8 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pAp
     if (g_bInitialized || g_pSECoPMain != nullptr || g_pThread != nullptr || g_pOldMessageHandler != nullptr)
     {
         g_pSECoPMain->cleanUp(true);
+        g_bShowGUI = (bGUI != 0);
+        SECoP_S_showStatusWindow(g_bShowGUI);
         return SECoP_S_SUCCESS;
     }
     if (g_pOldMessageHandler == nullptr) // install message logger
@@ -702,20 +704,25 @@ SECoP_S_Main* SECoP_S_Main::getInstance()
 }
 
 /// \return the Subversion revision as string
-QByteArray SECoP_S_Main::getGitVersion()
+QByteArray SECoP_S_Main::getVcsVersion()
 {
-    if (m_pInstance->m_szGitVersion.isNull())
+    if (m_pInstance->m_szVcsVersion.isNull())
     {
-        QByteArray szGitVersion;
+        QByteArray szVcsVersion;
 #ifdef GITVERSION
         // try using global Git version
-        szGitVersion = GITVERSION;
+        szVcsVersion = QByteArray("Git ") + GITVERSION;
+#else
+# ifdef SVNVERSION
+        // try using global SVN revision
+        szVcsVersion = QByteArray("SVN") + SVNVERSION;
+# endif
 #endif
-        if (szGitVersion.isEmpty())
-            szGitVersion = "unknown"; // use warning
-        m_pInstance->m_szGitVersion = szGitVersion.simplified().trimmed();
+        if (szVcsVersion.isEmpty())
+            szVcsVersion = "unknown version"; // use warning
+        m_pInstance->m_szVcsVersion = szVcsVersion.simplified().trimmed();
     }
-    return m_pInstance->m_szGitVersion;
+    return m_pInstance->m_szVcsVersion;
 }
 
 /// \return if the library was initialized using function pointers
@@ -1614,8 +1621,8 @@ void SECoP_S_Main::forgetStoredCommands(QObject* pTarget)
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
-                                                                        char* szParameter, int* piParameterSize,
-                                                                        CSECoPbaseType** ppValue)
+                                                                    char* szParameter, int* piParameterSize,
+                                                                    CSECoPbaseType** ppValue)
 {
     SECoP_dataPtr pTmp;
     SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp));
@@ -1763,13 +1770,13 @@ void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction,
  * \param[in] pValue       new value of the parameter or command result
  * \param[in] pSigma       error of value of the parameter or nullptr
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
+ * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" void SHALL_EXPORT SECoP_S_putCommandAnswer(unsigned long long llId, enum SECoP_S_error iErrorCode,
-                                                          const CSECoPbaseType *pValue, const CSECoPbaseType *pSigma,
-                                                          double dblTimestamp)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_putCommandAnswer(unsigned long long llId,
+    enum SECoP_S_error iErrorCode, const CSECoPbaseType *pValue, const CSECoPbaseType *pSigma, double dblTimestamp)
 {
-    SECoP_S_Main::putCommandAnswer(llId, iErrorCode, SECoP_dataPtr(pValue->duplicate()), SECoP_dataPtr(pSigma->duplicate()),
-                                   dblTimestamp);
+    return SECoP_S_Main::putCommandAnswer(llId, iErrorCode, SECoP_dataPtr(pValue->duplicate()),
+                                          SECoP_dataPtr(pSigma->duplicate()), dblTimestamp);
 }
 
 /**
@@ -1780,17 +1787,20 @@ extern "C" void SHALL_EXPORT SECoP_S_putCommandAnswer(unsigned long long llId, e
  * \param[in] pValue       new value of the parameter or command result
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
  */
-void SECoP_S_Main::putCommandAnswer(qulonglong llId, enum SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
-                                    const SECoP_dataPtr pSigma, double dblTimestamp)
+enum SECoP_S_error SECoP_S_Main::putCommandAnswer(qulonglong llId, enum SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
+                                                  const SECoP_dataPtr pSigma, double dblTimestamp)
 {
+    enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     if (g_pSECoPMain == nullptr)
-        return;
+        return SECoP_S_ERROR_NOT_INITIALIZED;
     if (g_pSECoPMain->thread() == QThread::currentThread())
-        g_pSECoPMain->putCommandAnswerSlot(llId, iErrorCode, pValue, pSigma, dblTimestamp);
+        g_pSECoPMain->putCommandAnswerSlot(llId, iErrorCode, pValue, pSigma, dblTimestamp, &iResult);
     else
         QMetaObject::invokeMethod(g_pSECoPMain, "putCommandAnswerSlot", Qt::BlockingQueuedConnection, Q_ARG(qulonglong, llId),
                                   Q_ARG(SECoP_S_error, iErrorCode), Q_ARG(const SECoP_dataPtr, pValue),
-                                  Q_ARG(const SECoP_dataPtr, pSigma), Q_ARG(double, dblTimestamp));
+                                  Q_ARG(const SECoP_dataPtr, pSigma), Q_ARG(double, dblTimestamp),
+                                  Q_ARG(SECoP_S_error*, &iResult));
+    return iResult;
 }
 
 /**
@@ -1803,17 +1813,20 @@ void SECoP_S_Main::putCommandAnswer(qulonglong llId, enum SECoP_S_error iErrorCo
  * \param[in] pValue       new value of the parameter or command result
  * \param[in] pSigma       error of value of the parameter
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
+ * \param[out]    piResult        on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 void SECoP_S_Main::putCommandAnswerSlot(qulonglong llId, enum SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
-                                        const SECoP_dataPtr pSigma, double dblTimestamp)
+                                        const SECoP_dataPtr pSigma, double dblTimestamp, SECoP_S_error* piResult)
 {
     QMutexLocker locker(m_pMutex);
+    *piResult = SECoP_S_ERROR_INVALID_NAME;
     for (int i = 0; i < m_aExecutedCommands.size(); ++i)
     {
         if (m_aExecutedCommands[i].m_qwId != llId)
             continue;
 
         ActionEntry entry(m_aExecutedCommands.takeAt(i));
+        locker.unlock();
         if (dblTimestamp <= 0.0)
             dblTimestamp = std::numeric_limits<double>::quiet_NaN();
         switch (entry.m_iAction)
@@ -1828,6 +1841,7 @@ void SECoP_S_Main::putCommandAnswerSlot(qulonglong llId, enum SECoP_S_error iErr
             default:
                 break;
         }
+        *piResult = SECoP_S_SUCCESS;
         break;
     }
 }
@@ -1846,11 +1860,12 @@ void SECoP_S_Main::putCommandAnswerSlot(qulonglong llId, enum SECoP_S_error iErr
  * \param[in] iSigmaSize   size of the JSON sigma value or 0 (no sigma value)
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
  */
-extern "C" void SHALL_EXPORT SECoP_S_putCommandAnswer2(unsigned long long llId, enum SECoP_S_error iErrorCode,
-                                                           const char* szValue, int iValueSize, const char *szSigma,
-                                                           int iSigmaSize, double dblTimestamp)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_putCommandAnswer2(unsigned long long llId,
+        enum SECoP_S_error iErrorCode, const char* szValue, int iValueSize, const char *szSigma,
+        int iSigmaSize, double dblTimestamp)
 {
-    SECoP_S_Main::putCommandAnswer2(llId, iErrorCode, QByteArray(szValue, iValueSize), QByteArray(szSigma, iSigmaSize), dblTimestamp);
+    return SECoP_S_Main::putCommandAnswer2(llId, iErrorCode, QByteArray(szValue, iValueSize),
+                                           QByteArray(szSigma, iSigmaSize), dblTimestamp);
 }
 
 /**
@@ -1862,16 +1877,20 @@ extern "C" void SHALL_EXPORT SECoP_S_putCommandAnswer2(unsigned long long llId, 
  * \param[in] szSigma      error of value of the parameter
  * \param[in] dblTimestamp SECoP timestamp of the value or NaN
  */
-void SECoP_S_Main::putCommandAnswer2(qulonglong llId, enum SECoP_S_error iErrorCode, QByteArray szValue, QByteArray szSigma, double dblTimestamp)
+enum SECoP_S_error SECoP_S_Main::putCommandAnswer2(qulonglong llId, enum SECoP_S_error iErrorCode,
+                                                   QByteArray szValue, QByteArray szSigma,
+                                                   double dblTimestamp)
 {
+    enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     if (g_pSECoPMain == nullptr)
-        return;
+        return SECoP_S_ERROR_NOT_INITIALIZED;
     if (g_pSECoPMain->thread() == QThread::currentThread())
-        g_pSECoPMain->putCommandAnswer2Slot(llId, iErrorCode, szValue, szSigma, dblTimestamp);
+        g_pSECoPMain->putCommandAnswer2Slot(llId, iErrorCode, szValue, szSigma, dblTimestamp, &iResult);
     else
         QMetaObject::invokeMethod(g_pSECoPMain, "putCommandAnswer2Slot", Qt::BlockingQueuedConnection, Q_ARG(qulonglong, llId),
                                   Q_ARG(SECoP_S_error, iErrorCode), Q_ARG(QByteArray, szValue), Q_ARG(QByteArray, szSigma),
-                                  Q_ARG(double, dblTimestamp));
+                                  Q_ARG(double, dblTimestamp), Q_ARG(SECoP_S_error*, &iResult));
+    return iResult;
 }
 
 /**
@@ -1879,16 +1898,18 @@ void SECoP_S_Main::putCommandAnswer2(qulonglong llId, enum SECoP_S_error iErrorC
  *        a to do action. You have to provide the read value, value after change
  *        or command call result. All clients which subscribed to this module
  *        should be informed about parameter values.
- * \param[in] llId         id to use with \ref SECoP_S_putCommandAnswer2
- * \param[in] iErrorCode   SECoP_S_SUCCESS or SECoP_S_error for this action.
- * \param[in] szValue      new JSON value of the parameter or command result
- * \param[in] szSigma      error of value of the parameter
- * \param[in] dblTimestamp SECoP timestamp of the value or NaN
+ * \param[in]  llId         id to use with \ref SECoP_S_putCommandAnswer2
+ * \param[in]  iErrorCode   SECoP_S_SUCCESS or SECoP_S_error for this action.
+ * \param[in]  szValue      new JSON value of the parameter or command result
+ * \param[in]  szSigma      error of value of the parameter
+ * \param[in]  dblTimestamp SECoP timestamp of the value or NaN
+ * \param[out] piResult     on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCode, QByteArray szValue,
-                                         QByteArray szSigma, double dblTimestamp)
+                                         QByteArray szSigma, double dblTimestamp, SECoP_S_error *piResult)
 {
     QMutexLocker locker(m_pMutex);
+    *piResult = SECoP_S_ERROR_INVALID_NAME;
     for (int i = 0; i < m_aExecutedCommands.size(); ++i)
     {
         if (m_aExecutedCommands[i].m_qwId != llId)
@@ -1897,12 +1918,13 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
         ActionEntry entry(m_aExecutedCommands.takeAt(i));
         SECoP_dataPtr pValue;
         SECoP_dataPtr pSigma;
+        locker.unlock();
         if (entry.m_pParameter == nullptr)
         {
             CSECoPbaseType* p(CSECoPbaseType::importSECoP(szValue.constData()));
             if (p == nullptr)
             {
-                iErrorCode = SECoP_S_ERROR_INVALID_VALUE;
+                *piResult = SECoP_S_ERROR_INVALID_VALUE;
                 return;
             }
             pValue = SECoP_dataPtr(p);
@@ -1911,7 +1933,7 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
                 p = CSECoPbaseType::importSECoP(szValue.constData());
                 if (p == nullptr)
                 {
-                    iErrorCode = SECoP_S_ERROR_INVALID_VALUE;
+                    *piResult = SECoP_S_ERROR_INVALID_VALUE;
                     return;
                 }
                 pSigma = SECoP_dataPtr(p);
@@ -1923,7 +1945,7 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
             pValue = SECoP_dataPtr(pHint->duplicate());
             if (!pValue->importSECoP(szValue.constData(), true))
             {
-                iErrorCode = SECoP_S_ERROR_INVALID_VALUE;
+                *piResult = SECoP_S_ERROR_INVALID_VALUE;
                 return;
             }
             if (!szSigma.isEmpty())
@@ -1931,7 +1953,7 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
                 pSigma = SECoP_dataPtr(pHint->duplicate());
                 if (!pSigma->importSECoP(szSigma.constData(), true))
                 {
-                    iErrorCode = SECoP_S_ERROR_INVALID_VALUE;
+                    *piResult = SECoP_S_ERROR_INVALID_VALUE;
                     return;
                 }
             }
@@ -1950,6 +1972,7 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
             default:
                 break;
         }
+        *piResult = SECoP_S_SUCCESS;
         break;
     }
 }

@@ -102,16 +102,16 @@ void SECoP_S_Property::fillSECoPPropertyList()
         SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Node", "order",        0, SECoP_VT_JSON, 0));
 //      SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Node", "_test",        2, SECoP_VT_STRING, 0));
         //----------------------------Module Properties
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "interface_class", 2, SECoP_VT_JSON, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "description",     2, SECoP_VT_STRING, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "pollinterval",    0, SECoP_VT_DOUBLE, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "visibility",      0, SECoP_VT_INTEGER, SECoP_VT_DOUBLE, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "group",           0, SECoP_VT_STRING, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "meaning",         0, SECoP_VT_INTEGER, SECoP_VT_DOUBLE, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "importance",      0, SECoP_VT_INTEGER, SECoP_VT_DOUBLE, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "implementor",     0, SECoP_VT_STRING, 0));
-        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "order",           0, SECoP_VT_JSON, 0));
-//      SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "_test",           2, SECoP_VT_STRING, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "interface_classes", 2, SECoP_VT_JSON, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "description",       2, SECoP_VT_STRING, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "pollinterval",      0, SECoP_VT_DOUBLE, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "visibility",        0, SECoP_VT_INTEGER, SECoP_VT_DOUBLE, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "group",             0, SECoP_VT_STRING, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "meaning",           0, SECoP_VT_INTEGER, SECoP_VT_DOUBLE, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "importance",        0, SECoP_VT_INTEGER, SECoP_VT_DOUBLE, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "implementor",       0, SECoP_VT_STRING, 0));
+        SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "order",             0, SECoP_VT_JSON, 0));
+//      SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Module", "_test",             2, SECoP_VT_STRING, 0));
         //----------------------------Parameter Properties
         SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Parameter", "description",  2, SECoP_VT_STRING, 0));
         SECoP_S_Property::m_aSECoPPropertyList.append(PropertyStruct("Parameter", "datainfo",     2, SECoP_VT_JSON, 0));

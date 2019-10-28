@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
             SECoP_S_addPropertyString("description", " module ts 1 something cold");
             SECoP_S_addPropertyString("decription", " module 1 something cold");       // ts1 decription SECoP_S_WARNING_CUSTOM_PROPERTY
             SECoP_S_addPropertyString("description", " module 1 something cold");      // ts1 description SECoP_S_ERROR_NAME_ALREADY_USED
-            SECoP_S_addPropertyJSON("interface_class", "[\"Drivable\",\"Writable\",\"Readable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
             SECoP_S_addPropertyString("visibility", "user");
             SECoP_S_addReadableParameter("value", nullptr);                            // ts1 value SECoP_S_ERROR_NO_GETTER
                 SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");    // ts1 datainfo SECoP_S_ERROR_NAME_ALREADY_USED
@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 
             SECoP_S_addModule("m3");
                 SECoP_S_addPropertyString("description", " m3 and alot of description");
-                SECoP_S_addPropertyJSON("interface_class", "[\"Readable\"]");
+                SECoP_S_addPropertyJSON("interface_classes", "[\"Readable\"]");
                 SECoP_S_addPropertyString("visibility", "expert");
                 SECoP_S_addReadableParameter("value", nullptr);                            // m3 value SECoP_S_ERROR_NO_GETTER
                 SECoP_S_addReadableParameter("value", nullptr);                            // m3 value SECoP_S_ERROR_NAME_ALREADY_USED
@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
 //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
         SECoP_S_addModule("hpd");
             SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_class", "[\"Drivable\",\"Writable\",\"Readable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
             SECoP_S_addPropertyDouble("pollinterval", 10.0);
             SECoP_S_addReadableParameter("value", &Local_GetTemperature);
                 SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
@@ -444,9 +444,9 @@ int main(int argc, char *argv[])
     SECoP_S_createNode("HZB_TestNode2", "TestNode2", 2055);
         SECoP_S_addModule("mod1");
             SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_class", "[\"Drivable\",\"Writable\",\"Readable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
 
-            SECoP_S_addPropertyJSON("interface_class", "[\"magnet\",\"Driveable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"magnet\",\"Driveable\"]");
 
             SECoP_S_addPropertyDouble("pollinterval", 10.0);
             SECoP_S_addReadableParameter("value", &Local_GetTemperature);
@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
             SECoP_S_addModule("mod2");
                 SECoP_S_addPropertyString("group","test");
                 SECoP_S_addPropertyString("description", "test writable");
-                SECoP_S_addPropertyJSON("interface_class", "[\"Writable\",\"Readable\"]");
+                SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]");
                 SECoP_S_addPropertyDouble("pollinterval", 10.0);
 
                 SECoP_S_addReadableParameter("value", &Local_GetTemperature);
@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
             SECoP_S_addModule("mod3");
                 SECoP_S_addPropertyString("group","toast");
                 SECoP_S_addPropertyString("description", "Hotplate drivable");
-                SECoP_S_addPropertyJSON("interface_class", "[\"Drivable\",\"Writable\",\"Readable\"]");
+                SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
                 SECoP_S_addPropertyDouble("pollinterval", 10.0);
 
                 SECoP_S_addReadableParameter("value", &Local_GetTemperature);
@@ -558,7 +558,7 @@ int main(int argc, char *argv[])
 
             SECoP_S_addModule("mod4");
                 SECoP_S_addPropertyString("description", "Hotplate drivable");
-                SECoP_S_addPropertyJSON("interface_class", "[\"Writable\",\"Readable\"]");
+                SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]");
                 SECoP_S_addPropertyDouble("pollinterval", 10.0);
 
                 SECoP_S_addReadableParameter("value", &Local_GetTemperature);
@@ -575,7 +575,7 @@ int main(int argc, char *argv[])
 
             SECoP_S_addModule("mod5");
                 SECoP_S_addPropertyString("description", "test readable");
-                SECoP_S_addPropertyJSON("interface_class", "[\"Readable\"]");
+                SECoP_S_addPropertyJSON("interface_classes", "[\"Readable\"]");
                 SECoP_S_addPropertyDouble("pollinterval", 10.0);
 
                 SECoP_S_addReadableParameter("value", &Local_GetTemperature);
@@ -607,7 +607,7 @@ int main(int argc, char *argv[])
     SECoP_S_createNode("HZB", "TestNode", 2055);
         SECoP_S_addModule("hpd");
             SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_class", "[\"Drivable\",\"Writable\",\"Readable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
             SECoP_S_addReadableParameter("temp", &Local_GetTemperature);
                 SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
                 SECoP_S_addPropertyString("description", "actual temperature");
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
     SECoP_S_setManyThreads(0);
     SECoP_S_createNode("HZB", "TestNode", 2055);
         SECoP_S_addModule("hpd");
-            SECoP_S_addPropertyJSON("interface_class", "[\"Writable\",\"Readable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]");
             SECoP_S_addPropertyDouble("pollinterval", 0.0);
             SECoP_S_addPropertyString("description", "simulate");
             SECoP_S_addReadableParameter("value", nullptr);
