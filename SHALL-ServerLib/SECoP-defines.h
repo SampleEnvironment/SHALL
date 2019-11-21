@@ -57,9 +57,10 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 
 /**
  * \brief default polling interval for SECoP modules and their parameters
+ *        (zero means never)
  * \ingroup exptype
  */
-#define SECOP_DEFAULT_POLLINTERVAL 1000 /* ms */
+#define SECOP_DEFAULT_POLLINTERVAL 0 /* ms */
 
 /** \brief maximum possible polling interval for SECoP modules and their parameters
  * \ingroup exptype

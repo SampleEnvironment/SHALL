@@ -490,6 +490,8 @@ void SECoP_S_Module::nodeIsCompleteSlot()
         else if (m_iPollInterval > SECOP_MAX_POLLINTERVAL)
             m_iPollInterval = SECOP_MAX_POLLINTERVAL; // not longer than 1 hour
         m_iPollTimerId = startTimer(m_iPollInterval);
+        QTimerEvent ev(m_iPollTimerId);
+        timerEvent(&ev);
     }
     else
         m_iPollTimerId = 0;

@@ -2064,6 +2064,7 @@ void ClientGui::buildStructure(NodeConnection* pConnection, QByteArray &szText)
                         accessibleItem.rwxType = b ? 'R' : 'W';
                 }
                 QString unit = QString::fromStdString(getUnit(pType));
+                accessibleItem.unit = unit;
             }
 
             actNode[modname+":"+accname]=accessibleItem;

@@ -228,7 +228,7 @@ void SHALL_EXPORT SECoP_S_showErrors();
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter(const char* szParameterName, const CSECoPbaseType* pData,
-                                                        const CSECoPbaseType* pSigma, double dblTimestamp);
+                                                            const CSECoPbaseType* pSigma, double dblTimestamp);
 
 /**
  * \brief Call SECoP_S_updateParameter, if you have a new value for an existing
@@ -244,7 +244,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter(const char* szParameterN
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter2(const char* szParameterName, const char* szValue, int iValueSize,
-                                                         const char* szSigma, int iSigmaSize, double dblTimestamp);
+                                                           const char* szSigma, int iSigmaSize, double dblTimestamp);
 
 /**
  * \brief When polling is enabled (\ref SECoP_S_createNode) call SECoP_S_getStoredCommand
@@ -261,7 +261,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter2(const char* szParameter
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
-                                                         char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue);
+                                                             char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue);
 
 /**
  * \brief When polling is enabled (\ref SECoP_S_createNode) call SECoP_S_getStoredCommand2

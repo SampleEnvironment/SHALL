@@ -3646,7 +3646,7 @@ template <typename T> bool CSECoParraySimple<T>::createSECoPHelper(SECoP_json &j
         return false;
     if (!json.contains("members"))
         return false;
-    const SECoP_json &v(json["members"]);
+    SECoP_json v(json["members"]);
     if (!v.is_object() || !v.contains("type"))
         return false;
     if (!aszDelKeys.contains("members"))
@@ -7493,8 +7493,9 @@ bool CSECoParray::setArrayType(const CSECoPbaseType* pType)
 bool CSECoParray::setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, bool bForceRealloc)
 {
     if (uMaximum > INT_MAX)
-        return false;
-    if (uMinimum == m_uMinSize && uMaximum == m_uMaxSize)
+        uMaximum = INT_MAX;
+    if (uMinimum == m_uMinSize && uMaximum == m_uMaxSize &&
+        m_uMinSize <= m_uSize && m_uSize <= m_uMaxSize)
         return true;
     if (!CSECoParrayBase::setMinMaxSize(uMinimum, uMaximum, bForceRealloc))
         return false;
@@ -7505,6 +7506,11 @@ bool CSECoParray::setMinMaxSize(unsigned int uMinimum, unsigned int uMaximum, bo
         m_apItems.append(nullptr);
     while (static_cast<unsigned int>(m_apItems.size()) > uNewMax)
         delete m_apItems.takeLast();
+    if (m_pType != nullptr)
+        for (int i = 0; i < m_apItems.size(); ++i)
+            if (m_apItems[i] == nullptr)
+                m_apItems[i] = m_pType->duplicate();
+    m_uSize = m_apItems.size();
     return true;
 }
 
@@ -7535,6 +7541,10 @@ bool CSECoParray::setSize(unsigned int uSize)
         m_apItems.append(nullptr);
     while (static_cast<unsigned int>(m_apItems.size()) > uNewMax)
         delete m_apItems.takeLast();
+    if (m_pType != nullptr)
+        for (int i = 0; i < m_apItems.size(); ++i)
+            if (m_apItems[i] == nullptr)
+                m_apItems[i] = m_pType->duplicate();
     return true;
 }
 
@@ -7557,6 +7567,9 @@ bool CSECoParray::setValue(unsigned int uIndex, CSECoPbaseType* pValue)
     }
     else if (!m_pType->compareType(pValue))
         return false;
+    for (int i = 0; i < m_apItems.size(); ++i)
+        if (m_apItems[i] == nullptr)
+            m_apItems[i] = m_pType->duplicate();
     if (m_apItems[iPos] != nullptr)
         delete m_apItems[iPos];
     m_apItems[iPos] = pValue;
@@ -7582,6 +7595,9 @@ bool CSECoParray::setValue(unsigned int uIndex, const CSECoPbaseType* pValue)
     }
     else if (!m_pType->compareType(pValue))
         return false;
+    for (int i = 0; i < m_apItems.size(); ++i)
+        if (m_apItems[i] == nullptr)
+            m_apItems[i] = m_pType->duplicate();
     CSECoPbaseType* pTmp(const_cast<CSECoPbaseType*>(pValue)->duplicate());
     if (pTmp == nullptr)
         return false;
@@ -7623,6 +7639,10 @@ bool CSECoParray::appendValue(CSECoPbaseType* pValue)
     int iPos(m_apItems.size());
     if (!setSize(static_cast<unsigned int>(iPos) + 1U))
         return false;
+    if (m_pType != nullptr)
+        for (int i = 0; i < m_apItems.size(); ++i)
+            if (m_apItems[i] == nullptr)
+                m_apItems[i] = m_pType->duplicate();
     if (m_apItems[iPos] != nullptr)
         delete m_apItems[iPos];
     m_apItems[iPos] = pValue;
@@ -7652,6 +7672,10 @@ bool CSECoParray::appendValue(const CSECoPbaseType* pValue)
     CSECoPbaseType* pTmp(const_cast<CSECoPbaseType*>(pValue)->duplicate());
     if (pTmp == nullptr)
         return false;
+    if (m_pType != nullptr)
+        for (int i = 0; i < m_apItems.size(); ++i)
+            if (m_apItems[i] == nullptr)
+                m_apItems[i] = m_pType->duplicate();
     if (m_apItems[iPos] != nullptr)
         delete m_apItems[iPos];
     m_apItems[iPos] = pTmp;
@@ -7683,7 +7707,7 @@ bool CSECoParray::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
         return false;
     if (!aszDelKeys.contains("members"))
         aszDelKeys.append("members");
-    return true;
+    return setMinMaxSize(m_uMinSize, m_uMaxSize, true);
 }
 
 /**
