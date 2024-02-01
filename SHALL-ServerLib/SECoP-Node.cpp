@@ -33,11 +33,12 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
  * \param[in] wPort    TCP port to listen to
  * \param[in] pParent  Qt parent object
  */
-SECoP_S_Node::SECoP_S_Node(QString szNodeID, QString szDesc, QHostAddress address, quint16 wPort, QObject* pParent)
+SECoP_S_Node::SECoP_S_Node(QString szContextID,QString szNodeID, QString szDesc, QHostAddress address, quint16 wPort, QObject* pParent)
     : QObject(pParent)
     , m_pMutex(nullptr)
     , m_pServer(nullptr)
     , m_szNodeID(szNodeID)
+    , m_szContext_ID(szContextID)
     , m_szDescription(szDesc)
     , m_bChangeable(true)
     , m_iModuleFocus(-1)
@@ -1376,6 +1377,12 @@ QString SECoP_S_Node::getErrors() const
 QString SECoP_S_Node::getNodeID() const
 {
     return m_szNodeID;
+}
+
+/// \return the Context ID
+QString SECoP_S_Node::getContextID() const
+{
+    return m_szContextID;
 }
 
 /**

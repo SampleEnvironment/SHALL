@@ -3,6 +3,9 @@
 TEMPLATE =	subdirs
 CONFIG  +=	ordered
 
+
+
+
 SUBDIRS +=	SHALL-VariantLib \
 		SHALL-ServerLib \
 		SHALL-ServerDummy \

@@ -448,7 +448,7 @@ SECoP_S_Main* SECoP_S_Main::m_pInstance = nullptr;
 SECoP_S_Main::SECoP_S_Main()
     : QObject()
     , m_pGui(nullptr)
-    , m_pLastNode(nullptr)
+    , m_ContextIdMap()
     , m_bManyThreads(true)
 {
     m_pInstance = this;
@@ -471,9 +471,18 @@ SECoP_S_Main::~SECoP_S_Main()
     QThread* pMySelfThread(QThread::currentThread());
     for (auto it = m_apNodes.begin(); it != m_apNodes.end(); ++it)
     {
-        SECoP_S_Node* pNode(*it);
-        if (pNode == m_pLastNode)
-            m_pLastNode = nullptr;
+        SECoP_S_Node* pNode(*it);        
+        SECoP_S_Node* last_Node = nullptr;
+
+        QString ContextID = pNode->getContextID();
+
+        if (m_ContextIdMap.contains(ContextID)){
+            last_Node = m_ContextIdMap.value(pNode->getContextID());
+        }
+
+        if (pNode == last_Node)
+            m_ContextIdMap.remove(ContextID);
+
         if (pNode != nullptr)
         {
             QThread* pNodeThread(pNode->thread());
@@ -486,8 +495,27 @@ SECoP_S_Main::~SECoP_S_Main()
             delete pNode;
         }
     }
-    if (m_pLastNode != nullptr)
-        delete m_pLastNode;
+
+    // Check if there are any nodes left in the ContextID map
+    if (!m_ContextIdMap.isEmpty()){
+        QMap<QString, SECoP_S_Node*>::const_iterator it;
+        for (it = m_ContextIdMap.constBegin(); it != m_ContextIdMap.constEnd(); ++it) {
+            // Access the key and value using it.key() and it.value()
+            QString Key_ContextID = it.key();
+            SECoP_S_Node* pValue_Node = it.value();
+
+            if( pValue_Node != nullptr )
+                delete pValue_Node;
+
+            m_ContextIdMap.remove(Key_ContextID);
+        }
+
+        m_ContextIdMap.clear();
+
+
+
+    }
+
     if (m_pGui != nullptr)
     {
         m_pGui->allowClose();
@@ -883,6 +911,7 @@ enum SECoP_S_error SECoP_S_Main::deleteNode(QString szID)
  */
 void SECoP_S_Main::deleteNode(QString szID, SECoP_S_error* piResult)
 {
+    //TODO: Last Node needs to be reset to nullptr according to Context ID of deleted Node
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     int iPos(-1);
     SECoP_S_Node* pNode(nullptr);

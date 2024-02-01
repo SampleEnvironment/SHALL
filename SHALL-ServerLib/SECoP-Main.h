@@ -40,7 +40,7 @@ public:
     static double getCurrentTime();
     static QByteArray getVcsVersion();
     static bool hasFunctionPointers();
-    static enum SECoP_S_error createNode(QString szID, QString szDesc, QString szInterface, quint16 wPort);
+    static enum SECoP_S_error createNode(QString szContextID, QString szID, QString szDesc, QString szInterface, quint16 wPort);
     static enum SECoP_S_error deleteNode(QString szID);
     static enum SECoP_S_error addProperty(QString szKey, const SECoP_dataPtr pValue);
     static enum SECoP_S_error addCommand(QString szKey, SECoP_S_callFunction ptrToFunc);
@@ -132,7 +132,7 @@ private:
     /// the status window
     SECoP_S_StatusGui*   m_pGui;
     /// the last created SECoP node for next "add...." function
-    SECoP_S_Node*        m_pLastNode;
+    QMap<QString, SECoP_S_Node*>     m_ContextIdMap;
     /// a list of errors while SEC-node creation
     QStringList          m_aszErrorList;
     /// a list of warnings while SEC-node creation

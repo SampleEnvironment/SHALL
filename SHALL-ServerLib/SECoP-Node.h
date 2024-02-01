@@ -33,7 +33,7 @@ class SECoP_S_Node : public QObject
     Q_DISABLE_COPY(SECoP_S_Node)
 
 public:
-    explicit SECoP_S_Node(QString szNodeID, QString szDesc, QHostAddress address, quint16 wPort, QObject* pParent = nullptr);
+    explicit SECoP_S_Node(QString szContextID,QString szNodeID, QString szDesc, QHostAddress address, quint16 wPort, QObject* pParent = nullptr);
     virtual ~SECoP_S_Node();
     bool isValid() const;
     enum SECoP_S_error addCommand(QString szKey, SECoP_S_callFunction ptrToFunc);
@@ -47,6 +47,7 @@ public:
     QString getErrors() const;
     QString getActiveModuleName() const;
     QString getNodeID() const;
+    QString getContextID() const;
     QString getPrintableActive(bool bWithAccessible) const;
     SECoP_S_Module* getModule(int iModule) const;
     int modulePosition(QString szModuleName) const;
@@ -90,6 +91,8 @@ private:
     SECoP_json             m_szDescribingJSON;
     /// the node id
     QString                    m_szNodeID;
+    /// Context ID where the Node was created
+    QString                    m_szContextID;
     /// node description text
     QString                    m_szDescription;
     /// error and warning text
