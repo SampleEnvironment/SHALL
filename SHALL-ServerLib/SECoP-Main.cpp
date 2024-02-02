@@ -117,7 +117,7 @@ static volatile bool g_bInitialized = false;
 static void SECoP_S_initLibraryThread(void);
 static void SECoP_S_initLibraryHelper(void);
 static void SECoP_S_initLibraryExit(void);
-static void SECoP_S_initLibraryExitHelper(bool bAtExit);
+static void SECoP_S_initLibraryExitHelper(bool bAtExit,QString szContextID);
 static void SECoP_S_MessageHandler(QtMsgType iType, const QMessageLogContext &context, const QString &szMessage);
 
 /*
@@ -135,13 +135,14 @@ static void SECoP_S_MessageHandler(QtMsgType iType, const QMessageLogContext &co
  * \param[in] bEnableFunctionPointers
  *                   0=false: disable function pointers and force polling,
  *                   1=true: use function pointers
+ * \param[in] szContextID ID of current environment
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, int bGUI, int bEnableFunctionPointers)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, int bGUI, int bEnableFunctionPointers, const char* szContextID)
 {
     if (g_bInitialized || g_pSECoPMain != nullptr || g_pThread != nullptr || g_pOldMessageHandler != nullptr)
     {
-        g_pSECoPMain->cleanUp(true);
+        g_pSECoPMain->cleanUp(true,szContextID);
         g_bShowGUI = (bGUI != 0);
         SECoP_S_showStatusWindow(g_bShowGUI);
         return SECoP_S_SUCCESS;
@@ -198,9 +199,9 @@ void SECoP_S_initLibraryHelper(void)
  * \brief This function is called by the global exit handler at lib-C exit.
  * \ingroup intfunc
  */
-void SECoP_S_initLibraryExit(void)
+void SECoP_S_initLibraryExit()
 {
-    SECoP_S_initLibraryExitHelper(true);
+    SECoP_S_initLibraryExitHelper(true,nullptr);
 }
 
 /**
@@ -208,18 +209,19 @@ void SECoP_S_initLibraryExit(void)
  *        what has been created or changed since library initialization.
  * \ingroup intfunc
  * \param[in] bAtExit false: user called, true: lib-C called (atexit)
+ * \param[in] szContextID ID of current environment
  */
-void SECoP_S_initLibraryExitHelper(bool bAtExit)
+void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
 {
     if (!bAtExit && g_bInitialized && g_bExitHandlerInstalled && g_pSECoPMain != nullptr)
     {
-        g_pSECoPMain->cleanUp(true);
+        g_pSECoPMain->cleanUp(true,szContextID);
         return;
     }
     qInstallMessageHandler(g_pOldMessageHandler);
     g_pOldMessageHandler = nullptr;
     if (g_pSECoPMain != nullptr)
-        g_pSECoPMain->cleanUp(false);
+        g_pSECoPMain->cleanUp(false,szContextID);
     else if (g_pApplication != nullptr)
     {
         g_pApplication->quit();
@@ -283,11 +285,12 @@ static void SECoP_S_initLibraryThread(void)
  *        what has been created or changed since library initialization.
  * \ingroup expfunc
  * \param[in] bNodeOnly false: clean up all, true: clean up nodes only
+ * \param[in] szContextID ID of current environment
  */
-void SHALL_EXPORT SECoP_S_doneLibrary(int bNodeOnly)
+void SHALL_EXPORT SECoP_S_doneLibrary(int bNodeOnly,const char* szContextID)
 {
     SECoP_S_showStatusWindow(0);
-    SECoP_S_initLibraryExitHelper(!bNodeOnly);
+    SECoP_S_initLibraryExitHelper(!bNodeOnly,szContextID);
 }
 
 /*
@@ -597,16 +600,16 @@ void SECoP_S_Main::log(SECoP_S_Node* pNode, QString szData, bool bNodeOnly)
  *        on the calling thread and argument.
  * \param[in] bNodeOnly false: try to clean up everything, true: delete SEC-nodes only
  */
-void SECoP_S_Main::cleanUp(bool bNodeOnly)
+void SECoP_S_Main::cleanUp(bool bNodeOnly,QString szContextID)
 {
     if (g_pApplication != nullptr)
     {
         if (QThread::currentThread() == thread())
-            cleanUpSlot(bNodeOnly);
+            cleanUpSlot(bNodeOnly,szContextID);
         else if (!bNodeOnly)
             QMetaObject::invokeMethod(this, "deleteLater", Qt::QueuedConnection);
         else
-            QMetaObject::invokeMethod(this, "cleanUpSlot", Qt::BlockingQueuedConnection, Q_ARG(bool, bNodeOnly));
+            QMetaObject::invokeMethod(this, "cleanUpSlot", Qt::BlockingQueuedConnection, Q_ARG(bool, bNodeOnly),Q_ARG(QString, szContextID));
     }
     else
         delete g_pSECoPMain;
@@ -616,14 +619,22 @@ void SECoP_S_Main::cleanUp(bool bNodeOnly)
  * \brief This function calls cleans up the SEC-nodes only or triggers later
  *        self deletion, depending on argument.
  * \param[in] bNodeOnly false: trigger later deletion, true: delete SEC-nodes only
+ * \param[in] szContextID ID of current environment
  */
-void SECoP_S_Main::cleanUpSlot(bool bNodeOnly)
+void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
 {
     if (bNodeOnly && g_bInitialized)
     {
         for (int iPos = 0; iPos < m_apNodes.size(); ++iPos)
         {
+
             SECoP_S_Node* pNode(m_apNodes.takeAt(iPos));
+
+            // check if Node is part of current Context
+            if(pNode->getContextID() != szContextID)
+                continue;
+
+
             if (pNode != nullptr)
             {
                 QMutexLocker locker(m_pMutex);
@@ -639,8 +650,12 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly)
                     if (entry.m_pNode == pNode)
                         m_aExecutedCommands.removeAt(i--);
                 }
-                if (pNode == m_pLastNode)
-                    m_pLastNode = nullptr;
+
+
+                if (m_ContextIdMap.contains(szContextID) && pNode == m_ContextIdMap.value(szContextID))
+                        m_ContextIdMap.insert(szContextID,nullptr);
+
+
                 QThread* pNodeThread(pNode->thread());
                 QThread* pMySelfThread(QThread::currentThread());
                 if (pNodeThread != pMySelfThread)
@@ -769,11 +784,11 @@ bool SECoP_S_Main::hasFunctionPointers()
  * \param[in] wPort  TCP port to listen to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode(const char* szID, const char* szDesc, unsigned short wPort)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode(const char* szID, const char* szDesc, unsigned short wPort, const char* szContextID)
 {
     local_qInfo("szID=%p %s\nszDesc=%p %s", static_cast<const void*>(szID), szID,
                 static_cast<const void*>(szDesc), szDesc);
-    return SECoP_S_Main::createNode(szID, szDesc, QString(), wPort);
+    return SECoP_S_Main::createNode(szContextID,szID, szDesc, QString(), wPort);
 }
 
 /*
@@ -791,11 +806,11 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode(const char* szID, 
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode2(const char* szID, const char* szDesc,
-                                                                   const char* szInterface, unsigned short wPort)
+                                                                   const char* szInterface, unsigned short wPort, const char* szContextID)
 {
     local_qInfo("szID=%p %s\nszDesc=%p %s", static_cast<const void*>(szID), szID,
                 static_cast<const void*>(szDesc), szDesc);
-    return SECoP_S_Main::createNode(szID, szDesc, szInterface, wPort);
+    return SECoP_S_Main::createNode(szContextID,szID, szDesc, szInterface, wPort);
 }
 
 /**
@@ -806,15 +821,15 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode2(const char* szID,
  * \param[in] wPort       TCP port to listen to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::createNode(QString szID, QString szDesc, QString szInterface, quint16 wPort)
+enum SECoP_S_error SECoP_S_Main::createNode(QString szContextID, QString szID, QString szDesc, QString szInterface, quint16 wPort)
 {
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
     if (g_pSECoPMain->thread() == QThread::currentThread())
-        g_pSECoPMain->createNode(szID, szDesc, szInterface, wPort, &iResult);
+        g_pSECoPMain->createNode(szContextID,szID, szDesc, szInterface, wPort, &iResult);
     else
-        QMetaObject::invokeMethod(g_pSECoPMain, "createNode", Qt::BlockingQueuedConnection, Q_ARG(QString, szID),
+        QMetaObject::invokeMethod(g_pSECoPMain, "createNode", Qt::BlockingQueuedConnection,Q_ARG(QString,szContextID), Q_ARG(QString, szID),
                                   Q_ARG(QString, szDesc), Q_ARG(QString, szInterface), Q_ARG(quint16, wPort),
                                   Q_ARG(SECoP_S_error*, &iResult));
     return iResult;
@@ -830,10 +845,16 @@ enum SECoP_S_error SECoP_S_Main::createNode(QString szID, QString szDesc, QStrin
  * \param[in]  wPort       TCP port to listen to
  * \param[out] piResult    on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-void SECoP_S_Main::createNode(QString szID, QString szDesc, QString szInterface, quint16 wPort, SECoP_S_error* piResult)
+void SECoP_S_Main::createNode(QString szContextID,QString szID, QString szDesc, QString szInterface, quint16 wPort, SECoP_S_error* piResult)
 {
+    if (szContextID.isEmpty()){
+        *piResult = SECoP_S_ERROR_INTERNAL; //TODO create new error message
+        return;
+    }
+
     if (szID.isEmpty() || !isValidName(szID))
         *piResult = SECoP_S_ERROR_MISSING_MANDATORY; // SECoPError no ID but ID is mandatory
+
     else
     {
         QHostAddress addr;
@@ -848,14 +869,19 @@ void SECoP_S_Main::createNode(QString szID, QString szDesc, QString szInterface,
                 addr = QHostAddress::Any;
         }
 
-        m_pLastNode = new SECoP_S_Node(szID, szDesc, addr, wPort);
-        if (m_pLastNode->isValid())
+
+        SECoP_S_Node* last_node = new SECoP_S_Node(szContextID,szID, szDesc, addr, wPort);
+
+        m_ContextIdMap.insert(szContextID,last_node);
+
+
+        if (last_node->isValid())
         {
             if (m_bManyThreads)
             {
                 QThread* pNodeThread = new QThread;
-                m_pLastNode->moveToThread(pNodeThread);
-                pNodeThread->connect(m_pLastNode, SIGNAL(destroyed()), SLOT(quit()), Qt::DirectConnection);
+                last_node->moveToThread(pNodeThread);
+                pNodeThread->connect(last_node, SIGNAL(destroyed()), SLOT(quit()), Qt::DirectConnection);
                 pNodeThread->connect(pNodeThread, SIGNAL(finished()), SLOT(deleteLater()));
                 pNodeThread->start();
             }
@@ -868,7 +894,7 @@ void SECoP_S_Main::createNode(QString szID, QString szDesc, QString szInterface,
                 else
                     m_aszErrorList.append(szData);
             }
-            m_apNodes.append(m_pLastNode);
+            m_apNodes.append(last_node);
         }
         else
             *piResult = SECoP_S_ERROR_INVALID_NODE;
@@ -933,8 +959,9 @@ void SECoP_S_Main::deleteNode(QString szID, SECoP_S_error* piResult)
             if (entry.m_pNode == pNode)
                 m_aExecutedCommands.removeAt(i--);
         }
-        if (pNode == m_pLastNode)
-            m_pLastNode = nullptr;
+        QString szContextID = pNode->getContextID();
+        if (m_ContextIdMap.contains(szContextID) && pNode == m_ContextIdMap.value(szContextID))
+            m_ContextIdMap.insert(szContextID, nullptr);
     }
     else
         iResult = SECoP_S_ERROR_INVALID_NODE;
@@ -983,11 +1010,11 @@ int SECoP_S_Main::nodePosition(QString szNode) const
  *                   for the standard SECoP properties
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addProperty(const char* szKey, const CSECoPbaseType* pValue)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addProperty(const char* szKey, const CSECoPbaseType* pValue, const char* szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    return g_pSECoPMain->addProperty(szKey, SECoP_dataPtr(pValue->duplicate()));
+    return g_pSECoPMain->addProperty(szContextID, szKey, SECoP_dataPtr(pValue->duplicate()));
 }
 
 /*
@@ -997,11 +1024,11 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addProperty(const char* szKey
  * \param[in] bValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyBoolean(const char* szKey, long long bValue)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyBoolean(const char* szKey, long long bValue, const char* szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    return g_pSECoPMain->addProperty(szKey, CSECoPbaseType::simpleBool(bValue != 0));
+    return g_pSECoPMain->addProperty(szContextID, szKey, CSECoPbaseType::simpleBool(bValue != 0));
 }
 
 /*
@@ -1011,11 +1038,11 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyBoolean(const char
  * \param[in] llValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyInteger(const char* szKey, long long llValue)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyInteger(const char* szKey, long long llValue, const char* szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    return g_pSECoPMain->addProperty(szKey, CSECoPbaseType::simpleInteger(llValue));
+    return g_pSECoPMain->addProperty(szContextID, szKey, CSECoPbaseType::simpleInteger(llValue));
 }
 
 /*
@@ -1025,11 +1052,11 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyInteger(const char
  * \param[in] dblValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyDouble(const char* szKey, double dblValue)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyDouble(const char* szKey, double dblValue, const char* szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    return g_pSECoPMain->addProperty(szKey, CSECoPbaseType::simpleDouble(dblValue));
+    return g_pSECoPMain->addProperty(szContextID, szKey, CSECoPbaseType::simpleDouble(dblValue));
 }
 
 /*
@@ -1039,11 +1066,11 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyDouble(const char*
  * \param[in] szValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyString(const char* szKey, const char* szValue)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyString(const char* szKey, const char* szValue, const char* szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    return g_pSECoPMain->addProperty(szKey, CSECoPbaseType::simpleString(szValue));
+    return g_pSECoPMain->addProperty(szContextID, szKey, CSECoPbaseType::simpleString(szValue));
 }
 
 /*
@@ -1053,7 +1080,7 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyString(const char*
  * \param[in] szValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyJSON(const char* szKey, const char* szValue)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyJSON(const char* szKey, const char* szValue, const char* szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
@@ -1061,7 +1088,7 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyJSON(const char* s
     CSECoPstring* pJson(dynamic_cast<CSECoPstring*>(pValue.get()));
     if (pJson == nullptr || !pJson->isValid())
         return SECoP_S_ERROR_INVALID_VALUE;
-    return g_pSECoPMain->addProperty(szKey, pValue);
+    return g_pSECoPMain->addProperty(szContextID, szKey, pValue);
 }
 
 /**
@@ -1071,16 +1098,16 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyJSON(const char* s
  * \param[in] pValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::addProperty(QString szKey, const SECoP_dataPtr pValue)
+enum SECoP_S_error SECoP_S_Main::addProperty(QString szContextID, QString szKey, const SECoP_dataPtr pValue)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    if (g_pSECoPMain->m_pLastNode == nullptr)
+    if (g_pSECoPMain->getLastNode(szContextID) == nullptr)
         return SECoP_S_ERROR_INVALID_NODE;
-    enum SECoP_S_error iResult(g_pSECoPMain->m_pLastNode->addProperty(szKey, pValue));
+    enum SECoP_S_error iResult(g_pSECoPMain->getLastNode(szContextID)->addProperty(szKey, pValue));
     if (iResult != 0)
     {
-        QString szData(QString("%1 property \"%2\": %3").arg(g_pSECoPMain->m_pLastNode->getPrintableActive(true)).arg(szKey).arg(getErrorString(iResult)));
+        QString szData(QString("%1 property \"%2\": %3").arg(g_pSECoPMain->getLastNode(szContextID)->getPrintableActive(true)).arg(szKey).arg(getErrorString(iResult)));
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
         if (iResult >= 0)
             g_pSECoPMain->m_aszWarningList.append(szData);
@@ -1096,9 +1123,9 @@ enum SECoP_S_error SECoP_S_Main::addProperty(QString szKey, const SECoP_dataPtr 
  * \param[in] szName name of the module, which is unique inside the SECoP node
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addModule(const char* szName)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addModule(const char* szName, const char* szContextID)
 {
-    return SECoP_S_Main::addModule(szName);
+    return SECoP_S_Main::addModule(szContextID, szName);
 }
 
 /**
@@ -1107,16 +1134,16 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addModule(const char* szName)
  * \param[in] szName name of the module, which is unique inside the SECoP node
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::addModule(QString szName)
+enum SECoP_S_error SECoP_S_Main::addModule(QString szContextID,QString szName)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    if (g_pSECoPMain->m_pLastNode == nullptr)
+    if (g_pSECoPMain->getLastNode(szContextID) == nullptr)
         return SECoP_S_ERROR_INVALID_NODE;
-    enum SECoP_S_error iResult(g_pSECoPMain->m_pLastNode->addModule(szName));
+    enum SECoP_S_error iResult(g_pSECoPMain->getLastNode(szContextID)->addModule(szName));
     if (iResult != 0)
     {
-        QString szData(QString("node \"%1\" module \"%2\": %3").arg(g_pSECoPMain->m_pLastNode->getNodeID()).arg(szName).arg(getErrorString(iResult)));
+        QString szData(QString("node \"%1\" module \"%2\": %3").arg(g_pSECoPMain->getLastNode(szContextID)->getNodeID()).arg(szName).arg(getErrorString(iResult)));
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
         if (iResult >= 0)
             g_pSECoPMain->m_aszWarningList.append(szData);
@@ -1133,9 +1160,9 @@ enum SECoP_S_error SECoP_S_Main::addModule(QString szName)
  * \param[in] ptrToFunc function, which is called when a client invokes the command
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addCommand(const char* szKey, SECoP_S_callFunction ptrToFunc)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addCommand(const char* szKey, SECoP_S_callFunction ptrToFunc, const char* szContextID)
 {
-    return SECoP_S_Main::addCommand(szKey, ptrToFunc);
+    return SECoP_S_Main::addCommand(szContextID, szKey, ptrToFunc);
 }
 
 /**
@@ -1145,16 +1172,16 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addCommand(const char* szKey,
  * \param[in] ptrToFunc function, which is called when a client invokes the command
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::addCommand(QString szKey, SECoP_S_callFunction ptrToFunc)
+enum SECoP_S_error SECoP_S_Main::addCommand(QString szContextID,QString szKey, SECoP_S_callFunction ptrToFunc)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    if (g_pSECoPMain->m_pLastNode == nullptr)
+    if (g_pSECoPMain->getLastNode(szContextID) == nullptr)
         return SECoP_S_ERROR_INVALID_NODE;
-    enum SECoP_S_error iResult(g_pSECoPMain->m_pLastNode->addCommand(szKey, ptrToFunc));
+    enum SECoP_S_error iResult(g_pSECoPMain->getLastNode(szContextID)->addCommand(szKey, ptrToFunc));
     if (iResult != 0)
     {
-        QString szData(QString("%1 command \"%2\": %3").arg(g_pSECoPMain->m_pLastNode->getPrintableActive(false)).arg(szKey).arg(getErrorString(iResult)));
+        QString szData(QString("%1 command \"%2\": %3").arg(g_pSECoPMain->getLastNode(szContextID)->getPrintableActive(false)).arg(szKey).arg(getErrorString(iResult)));
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
         if (iResult >= 0)
             g_pSECoPMain->m_aszWarningList.append(szData);
@@ -1172,9 +1199,9 @@ enum SECoP_S_error SECoP_S_Main::addCommand(QString szKey, SECoP_S_callFunction 
  * \param[in] ptrToGet function, which is called when a client asks for the value of this parameter
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addReadableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet)
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addReadableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet, const char* szContextID)
 {
-    return SECoP_S_Main::addReadableParameter(szName, ptrToGet);
+    return SECoP_S_Main::addReadableParameter(szContextID, szName, ptrToGet);
 }
 
 /**
@@ -1184,16 +1211,16 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addReadableParameter(const ch
  * \param[in] ptrToGet function, which is called when a client asks for the value of this parameter
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::addReadableParameter(QString szName, SECoP_S_getsetFunction ptrToGet)
+enum SECoP_S_error SECoP_S_Main::addReadableParameter(QString szContextID,QString szName, SECoP_S_getsetFunction ptrToGet)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    if (g_pSECoPMain->m_pLastNode == nullptr)
+    if (g_pSECoPMain->getLastNode(szContextID) == nullptr)
         return SECoP_S_ERROR_INVALID_NODE;
-    enum SECoP_S_error iResult(g_pSECoPMain->m_pLastNode->addReadableParameter(szName, ptrToGet));
+    enum SECoP_S_error iResult(g_pSECoPMain->getLastNode(szContextID)->addReadableParameter(szName, ptrToGet));
     if (iResult != 0)
     {
-        QString szData(QString("%1 parameter \"%2\": %3").arg(g_pSECoPMain->m_pLastNode->getPrintableActive(false)).arg(szName).arg(getErrorString(iResult)));
+        QString szData(QString("%1 parameter \"%2\": %3").arg(g_pSECoPMain->getLastNode(szContextID)->getPrintableActive(false)).arg(szName).arg(getErrorString(iResult)));
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
         if (iResult >= 0)
             g_pSECoPMain->m_aszWarningList.append(szData);
@@ -1213,9 +1240,9 @@ enum SECoP_S_error SECoP_S_Main::addReadableParameter(QString szName, SECoP_S_ge
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addWritableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet,
-                                                                            SECoP_S_getsetFunction ptrToSet)
+                                                                            SECoP_S_getsetFunction ptrToSet, const char* szContextID)
 {
-    return SECoP_S_Main::addWritableParameter(szName, ptrToGet, ptrToSet);
+    return SECoP_S_Main::addWritableParameter(szContextID, szName, ptrToGet, ptrToSet);
 }
 
 /**
@@ -1226,17 +1253,17 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_addWritableParameter(const ch
  * \param[in] ptrToSet function, which is called when a client wants to set a new value
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::addWritableParameter(QString szName, SECoP_S_getsetFunction ptrToGet,
+enum SECoP_S_error SECoP_S_Main::addWritableParameter(QString szContextID,QString szName, SECoP_S_getsetFunction ptrToGet,
                                                       SECoP_S_getsetFunction ptrToSet)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    if (g_pSECoPMain->m_pLastNode == nullptr)
+    if (g_pSECoPMain->getLastNode(szContextID) == nullptr)
         return SECoP_S_ERROR_INVALID_NODE;
-    enum SECoP_S_error iResult(g_pSECoPMain->m_pLastNode->addWritableParameter(szName, ptrToGet, ptrToSet));
+    enum SECoP_S_error iResult(g_pSECoPMain->getLastNode(szContextID)->addWritableParameter(szName, ptrToGet, ptrToSet));
     if (iResult != 0)
     {
-        QString szData(QString("%1 parameter \"%2\": %3").arg(g_pSECoPMain->m_pLastNode->getPrintableActive(false)).arg(szName).arg(getErrorString(iResult)));
+        QString szData(QString("%1 parameter \"%2\": %3").arg(g_pSECoPMain->getLastNode(szContextID)->getPrintableActive(false)).arg(szName).arg(getErrorString(iResult)));
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
         if (iResult >= 0)
             g_pSECoPMain->m_aszWarningList.append(szData);
@@ -1312,7 +1339,7 @@ void SECoP_S_Main::setAddFocus(QString szKey, SECoP_S_error* piResult)
 
     *piResult = pNode->setAddFocus(szKey);
     if (*piResult >= 0)
-        m_pLastNode = pNode;
+        m_ContextIdMap.insert(pNode->getContextID(),pNode);
 }
 
 /*
@@ -1322,9 +1349,9 @@ void SECoP_S_Main::setAddFocus(QString szKey, SECoP_S_error* piResult)
  * \ingroup expfunc
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_nodeComplete()
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_nodeComplete(const char* szContextID)
 {
-    return SECoP_S_Main::nodeComplete();
+    return SECoP_S_Main::nodeComplete(szContextID);
 }
 
 /**
@@ -1332,13 +1359,13 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_nodeComplete()
  *        the last created node.
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SECoP_S_Main::nodeComplete()
+enum SECoP_S_error SECoP_S_Main::nodeComplete(QString szContextID)
 {
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
-    if (g_pSECoPMain->m_pLastNode == nullptr)
+    if (g_pSECoPMain->getLastNode(szContextID) == nullptr)
         return SECoP_S_ERROR_INVALID_NODE;
-    return g_pSECoPMain->m_pLastNode->nodeComplete();
+    return g_pSECoPMain->getLastNode(szContextID)->nodeComplete();
 }
 
 /*
@@ -2121,6 +2148,17 @@ bool SECoP_S_Main::isValidName(QString szName)
         return false;
     return QRegExp("_?[A-Za-z][0-9A-Za-z_]*", Qt::CaseSensitive, QRegExp::RegExp2).exactMatch(szName);
 }
+
+/**
+ * \brief SECoP_S_Main::getLastNode
+ * \param[in] szContextID ID of current environment
+ * \return true: name if valid, false: invalid name
+ */
+SECoP_S_Node* SECoP_S_Main::getLastNode(QString szContextID)
+{
+    return m_ContextIdMap.value(szContextID,nullptr);
+}
+
 
 /// \returns a error description text while SEC-node creation
 QByteArray SECoP_S_Main::printErrorList()

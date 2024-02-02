@@ -32,9 +32,10 @@ typedef void QApplication; // declaration for C programs
  * \param[in] bEnableFunctionPointers
  *                   0=false: disable function pointers and force polling,
  *                   1=true: use function pointers
+ * \param[in] szContextID ID of current environment
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, int bGUI, int bEnableFunctionPointers);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, int bGUI, int bEnableFunctionPointers, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_doneLibrary, if you finished using this library. If you
@@ -46,7 +47,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, 
  * \ingroup expfunc
  * \param[in] bNodeOnly 0=false: try to clean up everything, 1=true: clean up only nodes
  */
-void SHALL_EXPORT SECoP_S_doneLibrary(int bNodeOnly);
+void SHALL_EXPORT SECoP_S_doneLibrary(int bNodeOnly, const char* szContextID);
 
 /**
  * \brief SECoP_S_setManyThreads configures thread creation inside the library
@@ -67,7 +68,7 @@ void SHALL_EXPORT SECoP_S_setManyThreads(int bManyThreads);
  * \param[in] wPort  TCP port to listen to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode(const char* szID, const char* szDesc, unsigned short wPort);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode(const char* szID, const char* szDesc, unsigned short wPort, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_createNode2 to create an empty SECoP node and bind it to
@@ -81,7 +82,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode(const char* szID, const char*
  * \param[in] wPort       TCP port to listen to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode2(const char* szID, const char* szDesc, const char* szInterface, unsigned short wPort);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_createNode2(const char* szID, const char* szDesc, const char* szInterface, unsigned short wPort, const char* szContextID);
 
 /**
  * \brief Delete an existing SECoP node with SECoP_S_deleteNode.
@@ -97,7 +98,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_deleteNode(const char* szID);
  * \param[in] szName name of the module, which is unique inside the SECoP node
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addModule(const char* szName);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addModule(const char* szName, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_addCommand to create a SECoP command inside the last created SECoP module.
@@ -106,7 +107,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addModule(const char* szName);
  * \param[in] ptrToFunc function, which is called when a client invokes the command
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addCommand(const char* szKey, SECoP_S_callFunction ptrToFunc);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addCommand(const char* szKey, SECoP_S_callFunction ptrToFunc, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_addReadableParameter to create a read only SECoP parameter
@@ -116,7 +117,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addCommand(const char* szKey, SECoP_S_ca
  * \param[in] ptrToGet function, which is called when a client asks for the value of this parameter
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addReadableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addReadableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_addWritableParameter to create a read- and writable SECoP
@@ -127,7 +128,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addReadableParameter(const char* szName,
  * \param[in] ptrToSet function, which is called when a client wants to set a new value
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addWritableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet, SECoP_S_getsetFunction ptrToSet);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addWritableParameter(const char* szName, SECoP_S_getsetFunction ptrToGet, SECoP_S_getsetFunction ptrToSet, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_addProperty to append a SECoP property to the last SECoP
@@ -141,7 +142,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addWritableParameter(const char* szName,
  *                   for the standard SECoP properties
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addProperty(const char* szKey, const CSECoPbaseType* pValue);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addProperty(const char* szKey, const CSECoPbaseType* pValue, const char* szContextID);
 
 /**
  * \brief Convenience function for \ref SECoP_S_addProperty with a boolean value.
@@ -150,7 +151,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addProperty(const char* szKey, const CSE
  * \param[in] bValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyBoolean(const char* szKey, long long bValue);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyBoolean(const char* szKey, long long bValue, const char* szContextID);
 
 /**
  * \brief Convenience function for \ref SECoP_S_addProperty with an integer value.
@@ -159,7 +160,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyBoolean(const char* szKey, lo
  * \param[in] llValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyInteger(const char* szKey, long long llValue);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyInteger(const char* szKey, long long llValue, const char* szContextID);
 
 /**
  * \brief Convenience function for \ref SECoP_S_addProperty with a floating point value.
@@ -168,7 +169,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyInteger(const char* szKey, lo
  * \param[in] dblValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyDouble(const char* szKey, double dblValue);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyDouble(const char* szKey, double dblValue, const char* szContextID);
 
 /**
  * \brief Convenience function for \ref SECoP_S_addProperty with a string value.
@@ -177,7 +178,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyDouble(const char* szKey, dou
  * \param[in] szValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyString(const char* szKey, const char* szValue);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyString(const char* szKey, const char* szValue, const char* szContextID);
 
 /**
  * \brief Convenience function for \ref SECoP_S_addProperty with a JSON value.
@@ -186,7 +187,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyString(const char* szKey, con
  * \param[in] szValue value of the property
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyJSON(const char* szKey, const char* szValue);
+enum SECoP_S_error SHALL_EXPORT SECoP_S_addPropertyJSON(const char* szKey, const char* szValue, const char* szContextID);
 
 /**
  * \brief Call SECoP_S_setAddFocus to change the focus while SECoP node creation.
@@ -207,7 +208,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_setAddFocus(const char* szKey);
  * \ingroup expfunc
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
-enum SECoP_S_error SHALL_EXPORT SECoP_S_nodeComplete();
+enum SECoP_S_error SHALL_EXPORT SECoP_S_nodeComplete(const char* szContextID);
 
 /**
  * \brief The function SECoP_S_showErrors prints all errors and warnings regarding

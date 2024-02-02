@@ -38,7 +38,7 @@ SECoP_S_Node::SECoP_S_Node(QString szContextID,QString szNodeID, QString szDesc,
     , m_pMutex(nullptr)
     , m_pServer(nullptr)
     , m_szNodeID(szNodeID)
-    , m_szContext_ID(szContextID)
+    , m_szContextID(szContextID)
     , m_szDescription(szDesc)
     , m_bChangeable(true)
     , m_iModuleFocus(-1)

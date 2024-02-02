@@ -42,13 +42,13 @@ public:
     static bool hasFunctionPointers();
     static enum SECoP_S_error createNode(QString szContextID, QString szID, QString szDesc, QString szInterface, quint16 wPort);
     static enum SECoP_S_error deleteNode(QString szID);
-    static enum SECoP_S_error addProperty(QString szKey, const SECoP_dataPtr pValue);
-    static enum SECoP_S_error addCommand(QString szKey, SECoP_S_callFunction ptrToFunc);
-    static enum SECoP_S_error addModule(QString szName);
-    static enum SECoP_S_error addReadableParameter(QString szName, SECoP_S_getsetFunction ptrToGet);
-    static enum SECoP_S_error addWritableParameter(QString szName, SECoP_S_getsetFunction ptrToGet, SECoP_S_getsetFunction ptrToSet);
+    static enum SECoP_S_error addProperty(QString szContextID, QString szKey, const SECoP_dataPtr pValue);
+    static enum SECoP_S_error addCommand(QString szContextID, QString szKey, SECoP_S_callFunction ptrToFunc);
+    static enum SECoP_S_error addModule(QString szContextID, QString szName);
+    static enum SECoP_S_error addReadableParameter(QString szContextID, QString szName, SECoP_S_getsetFunction ptrToGet);
+    static enum SECoP_S_error addWritableParameter(QString szContextID, QString szName, SECoP_S_getsetFunction ptrToGet, SECoP_S_getsetFunction ptrToSet);
     static enum SECoP_S_error setAddFocus(QString szKey);
-    static enum SECoP_S_error nodeComplete();
+    static enum SECoP_S_error nodeComplete(QString szContextID);
     static enum SECoP_S_error updateParameter(QString szParameterName, const SECoP_dataPtr pData, const SECoP_dataPtr pSigma, double dblTimestamp);
     static enum SECoP_S_error updateParameter2(QString szParameterName, QByteArray szData, QByteArray szSigma, double dblTimestamp);
     static void forgetStoredCommands(QObject* pTarget);
@@ -62,17 +62,18 @@ public:
     static void logAddConnection(SECoP_S_Node* pNode, QTcpSocket* pClient);
     static void logRemoveConnection(QTcpSocket* pClient);
     static void log(SECoP_S_Node* pNode, QString szData, bool bNodeOnly);
-    void cleanUp(bool bNodeOnly);
+    void cleanUp(bool bNodeOnly,QString szContextID);
     static void showGUI(bool bShowGUI);
     static bool manyThreads();
     static void manyThreads(bool bManyThreads);
     static bool isValidName(QString szName);
 
+
 private slots:
     void showErrorsSlot();
-    void cleanUpSlot(bool bNodeOnly);
+    void cleanUpSlot(bool bNodeOnly,QString szContextID);
     void sessionCleanUpTimer();
-    void createNode(QString szID, QString szDesc, QString szInterface, quint16 wPort, SECoP_S_error* piResult);
+    void createNode(QString szContextID, QString szID, QString szDesc, QString szInterface, quint16 wPort, SECoP_S_error* piResult);
     void deleteNode(QString szID, SECoP_S_error* piResult);
     void setAddFocus(QString szID, SECoP_S_error* piResult);
     void updateParameter(QString szParameterName, const SECoP_dataPtr pData, const SECoP_dataPtr pSigma,
@@ -90,6 +91,7 @@ private:
     void storeCommand(quint64 qwRequestId, QObject *pTarget, SECoP_S_Node* pNode, SECoP_S_Module* pModule, SECoP_S_action iAction,
                       SECoP_S_Parameter* pParameter, SECoP_S_Command* pCommand, const SECoP_dataPtr pValue);
     int nodePosition(QString szNode) const;
+    SECoP_S_Node* getLastNode(QString szContextID);
     static void logAddNode(SECoP_S_Node* pNode);
     static void logRemoveNode(SECoP_S_Node* pNode);
     static QByteArray printErrorList();
