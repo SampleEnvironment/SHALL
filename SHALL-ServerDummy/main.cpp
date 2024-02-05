@@ -21,6 +21,9 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #endif
 #endif
 
+
+#define CONTEXT_ID "default"
+
 void Local_GetTemperature(const char* name, enum SECoP_S_error* piError, CSECoPbaseType** ppData, CSECoPbaseType** ppSigma, double* timestamp)
 {
     Q_UNUSED(name);
@@ -359,7 +362,7 @@ int main(int argc, char *argv[])
     SECoPModul* pSimulator(new SECoPModul());
     pSimulator->show();
     pSimulator->connect(pSimulator, SIGNAL(finished(int)), &app, SLOT(quit()), Qt::QueuedConnection);
-    SECoP_S_initLibrary(&app, true, true);
+    SECoP_S_initLibrary(&app, true, true,CONTEXT_ID);
     SECoP_S_setManyThreads(0);
 /*
      SECoP_S_createNode("HZB", "", 2055);                                              // Node HZB SECoP_S_WARNING_NO_DESCRIPTION
@@ -415,27 +418,27 @@ int main(int argc, char *argv[])
     printf("%s\n", "hier");
     fflush(stdout);
 
-    SECoP_S_createNode("HZB_Testnode1", "TestNode", 2056);
+    SECoP_S_createNode("HZB_Testnode1", "TestNode", 2056,CONTEXT_ID);
 //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
-        SECoP_S_addModule("hpd");
-            SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
-            SECoP_S_addPropertyDouble("pollinterval", 10.0);
-            SECoP_S_addReadableParameter("value", &Local_GetTemperature);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-                SECoP_S_addPropertyString("description", "actual temperature");
-            SECoP_S_addReadableParameter("status", &Local_GetStatus);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}");
-                SECoP_S_addPropertyString("description", "machine status");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
+        SECoP_S_addModule("hpd",CONTEXT_ID);
+            SECoP_S_addPropertyString("description", "Hotplate drivable",CONTEXT_ID);
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]",CONTEXT_ID);
+            SECoP_S_addPropertyDouble("pollinterval", 10.0,CONTEXT_ID);
+            SECoP_S_addReadableParameter("value", &Local_GetTemperature,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "actual temperature",CONTEXT_ID);
+            SECoP_S_addReadableParameter("status", &Local_GetStatus,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "machine status",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
 //          SECoP_S_addReadableParameter2("useramp2", &SECoPModul::getRampBool, SECoPModul::theInstance);
-            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "target temperature");
-            SECoP_S_addCommand("stop",&funcCall);
-                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume");
-    SECoP_S_nodeComplete();
+            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "target temperature",CONTEXT_ID);
+            SECoP_S_addCommand("stop",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",CONTEXT_ID);
+    SECoP_S_nodeComplete(CONTEXT_ID);
 /*      SECoP_S_addWritableParameter("ramp", &Local_GetRamp, &Local_SetRamp);
             SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K/s\"}");
             SECoP_S_addPropertyString("description", "ramp rate to target temperature in K/s");
@@ -444,163 +447,163 @@ int main(int argc, char *argv[])
             SECoP_S_addPropertyString("description", "if true ramp rate is activated");*/
 #if 1
 
-    SECoP_S_createNode("HZB_TestNode2", "TestNode2", 2055);
-        SECoP_S_addModule("mod1");
-            SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
+    SECoP_S_createNode("HZB_TestNode2", "TestNode2", 2055,CONTEXT_ID);
+        SECoP_S_addModule("mod1",CONTEXT_ID);
+            SECoP_S_addPropertyString("description", "Hotplate drivable",CONTEXT_ID);
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]",CONTEXT_ID);
 
-            SECoP_S_addPropertyJSON("interface_classes", "[\"magnet\",\"Driveable\"]");
+            SECoP_S_addPropertyJSON("interface_classes", "[\"magnet\",\"Driveable\"]",CONTEXT_ID);
 
-            SECoP_S_addPropertyDouble("pollinterval", 10.0);
-            SECoP_S_addReadableParameter("value", &Local_GetTemperature);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "actual temperature");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addCommand("shutdown",&funcCall);
-                SECoP_S_addPropertyString("description", "go to defined finish point");
-            SECoP_S_addReadableParameter("status", &Local_GetStatus);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}");
-                SECoP_S_addPropertyString("description", "machine status");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-                SECoP_S_addPropertyString("group","test1:4");
-            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "target temperature");
-            SECoP_S_addWritableParameter("ramp", &Local_GetRamp, &Local_SetRamp);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K/s\"}");
-                SECoP_S_addPropertyString("description", "ramp rate to target temperature in K/s");
-                SECoP_S_addPropertyString("group","test1:3");
-            SECoP_S_addWritableParameter("useramp", &Local_GetUseRamp, &Local_SetUseRamp);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}");
-                SECoP_S_addPropertyString("description", "if true ramp rate is activated");
-                SECoP_S_addPropertyString("group","test2:2");
-            SECoP_S_addWritableParameter("_COMMITtestesehrlangennamen", &Local_GetCommit, &Local_SetCommit);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}");
-                SECoP_S_addPropertyString("description", "if true changes are send");
-                SECoP_S_addPropertyString("group","test2:1");
-            SECoP_S_addWritableParameter("HelloWorldRW", nullptr, nullptr);
+            SECoP_S_addPropertyDouble("pollinterval", 10.0,CONTEXT_ID);
+            SECoP_S_addReadableParameter("value", &Local_GetTemperature,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "actual temperature",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addCommand("shutdown",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "go to defined finish point",CONTEXT_ID);
+            SECoP_S_addReadableParameter("status", &Local_GetStatus,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "machine status",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+                SECoP_S_addPropertyString("group","test1:4",CONTEXT_ID);
+            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "target temperature",CONTEXT_ID);
+            SECoP_S_addWritableParameter("ramp", &Local_GetRamp, &Local_SetRamp,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K/s\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "ramp rate to target temperature in K/s",CONTEXT_ID);
+                SECoP_S_addPropertyString("group","test1:3",CONTEXT_ID);
+            SECoP_S_addWritableParameter("useramp", &Local_GetUseRamp, &Local_SetUseRamp,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "if true ramp rate is activated",CONTEXT_ID);
+                SECoP_S_addPropertyString("group","test2:2",CONTEXT_ID);
+            SECoP_S_addWritableParameter("_COMMITtestesehrlangennamen", &Local_GetCommit, &Local_SetCommit,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "if true changes are send",CONTEXT_ID);
+                SECoP_S_addPropertyString("group","test2:1",CONTEXT_ID);
+            SECoP_S_addWritableParameter("HelloWorldRW", nullptr, nullptr,CONTEXT_ID);
                 CSECoPsimpleDouble* pDouble(new CSECoPsimpleDouble());
                 pDouble->setValue(42.0001);
                 pDouble->additional()["unit"] = "K";
 //              SECoP_S_addProperty("datainfo", pDouble); // optional, because of complete "constant"
-                SECoP_S_addProperty("constant", pDouble);
+                SECoP_S_addProperty("constant", pDouble,CONTEXT_ID);
                 delete pDouble;
-                SECoP_S_addPropertyString("description", "a constant writable");
-            SECoP_S_addReadableParameter("HelloWorldR", nullptr);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"rubber points\"}");
-                SECoP_S_addPropertyString("description", "a constant readable");
-                SECoP_S_addPropertyDouble("constant", 42.0002);
-            SECoP_S_addCommand("go",&funcCall);
-                SECoP_S_addPropertyString("description", "flips the commit bool all buffered values are writen and the module starts work");
+                SECoP_S_addPropertyString("description", "a constant writable",CONTEXT_ID);
+            SECoP_S_addReadableParameter("HelloWorldR", nullptr,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"rubber points\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "a constant readable",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("constant", 42.0002,CONTEXT_ID);
+            SECoP_S_addCommand("go",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "flips the commit bool all buffered values are writen and the module starts work",CONTEXT_ID);
 //              SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"command\",\"argument\":{\"type\":\"string\"}}");
-            SECoP_S_addCommand("hold",&funcCall);
-                SECoP_S_addPropertyString("description", "stops and settings are stored for resume");
-            SECoP_S_addCommand("stop",&funcCall);
-                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume");
-            SECoP_S_addCommand("reset",&funcCall);
-                SECoP_S_addPropertyString("description", "set back the initial values");
+            SECoP_S_addCommand("hold",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "stops and settings are stored for resume",CONTEXT_ID);
+            SECoP_S_addCommand("stop",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",CONTEXT_ID);
+            SECoP_S_addCommand("reset",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "set back the initial values",CONTEXT_ID);
 
 
-        SECoP_S_addModule("mod2");
-            SECoP_S_addPropertyString("group","test");
-            SECoP_S_addPropertyString("description", "test writable");
-            SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]");
-            SECoP_S_addPropertyDouble("pollinterval", 10.0);
+        SECoP_S_addModule("mod2",CONTEXT_ID);
+            SECoP_S_addPropertyString("group","test",CONTEXT_ID);
+            SECoP_S_addPropertyString("description", "test writable",CONTEXT_ID);
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]",CONTEXT_ID);
+            SECoP_S_addPropertyDouble("pollinterval", 10.0,CONTEXT_ID);
 
-            SECoP_S_addReadableParameter("value", &Local_GetTemperature);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "actual temperature");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addReadableParameter("status", &Local_GetStatus);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}");
-                SECoP_S_addPropertyString("description", "machine status");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "target temperature");
-            SECoP_S_addWritableParameter("ramp", &Local_GetRamp, &Local_SetRamp);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K/s\"}");
-                SECoP_S_addPropertyString("description", "ramp rate to target temperature in K/s");
-                SECoP_S_addPropertyString("group","tst");
-            SECoP_S_addWritableParameter("useramp", &Local_GetUseRamp, &Local_SetUseRamp);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}");
-                SECoP_S_addPropertyString("description", "if true ramp rate is activated");
-                SECoP_S_addPropertyString("group","tst");
-            SECoP_S_addCommand("go",&funcCall);
-                SECoP_S_addPropertyString("description", "flips the commit bool all buffered values are writen and the module starts work");
+            SECoP_S_addReadableParameter("value", &Local_GetTemperature,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "actual temperature",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addReadableParameter("status", &Local_GetStatus,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "machine status",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "target temperature",CONTEXT_ID);
+            SECoP_S_addWritableParameter("ramp", &Local_GetRamp, &Local_SetRamp,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K/s\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "ramp rate to target temperature in K/s",CONTEXT_ID);
+                SECoP_S_addPropertyString("group","tst",CONTEXT_ID);
+            SECoP_S_addWritableParameter("useramp", &Local_GetUseRamp, &Local_SetUseRamp,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "if true ramp rate is activated",CONTEXT_ID);
+                SECoP_S_addPropertyString("group","tst",CONTEXT_ID);
+            SECoP_S_addCommand("go",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "flips the commit bool all buffered values are writen and the module starts work",CONTEXT_ID);
 //                  SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"command\",\"argument\":{\"type\":\"string\"}}");
-            SECoP_S_addCommand("hold",&funcCall);
-                SECoP_S_addPropertyString("description", "stops and settings are stored for resume");
-            SECoP_S_addCommand("stop",&funcCall);
-                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume");
-            SECoP_S_addCommand("reset",&funcCall);
-                SECoP_S_addPropertyString("description", "set back the initial values");
-            SECoP_S_addCommand("shutdown",&funcCall);
-                SECoP_S_addPropertyString("description", "go to defined finish point");
+            SECoP_S_addCommand("hold",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "stops and settings are stored for resume",CONTEXT_ID);
+            SECoP_S_addCommand("stop",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",CONTEXT_ID);
+            SECoP_S_addCommand("reset",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "set back the initial values",CONTEXT_ID);
+            SECoP_S_addCommand("shutdown",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "go to defined finish point",CONTEXT_ID);
 
 
-        SECoP_S_addModule("mod3");
-            SECoP_S_addPropertyString("group","toast");
-            SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]");
-            SECoP_S_addPropertyDouble("pollinterval", 10.0);
+        SECoP_S_addModule("mod3",CONTEXT_ID);
+            SECoP_S_addPropertyString("group","toast",CONTEXT_ID);
+            SECoP_S_addPropertyString("description", "Hotplate drivable",CONTEXT_ID);
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]",CONTEXT_ID);
+            SECoP_S_addPropertyDouble("pollinterval", 10.0,CONTEXT_ID);
 
-            SECoP_S_addReadableParameter("value", &Local_GetTemperature);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "actual temperature");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addReadableParameter("status", &Local_GetStatus);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}");
-                SECoP_S_addPropertyString("description", "machine status");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "target temperature");
-            SECoP_S_addCommand("stop",&funcCall);
-                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume");
-
-
-        SECoP_S_addModule("mod4");
-            SECoP_S_addPropertyString("description", "Hotplate drivable");
-            SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]");
-            SECoP_S_addPropertyDouble("pollinterval", 10.0);
-
-            SECoP_S_addReadableParameter("value", &Local_GetTemperature);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "actual temperature");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addReadableParameter("status", &Local_GetStatus);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}");
-                SECoP_S_addPropertyString("description", "machine status");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "target temperature");
+            SECoP_S_addReadableParameter("value", &Local_GetTemperature,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "actual temperature",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addReadableParameter("status", &Local_GetStatus,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "machine status",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "target temperature",CONTEXT_ID);
+            SECoP_S_addCommand("stop",&funcCall,CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",CONTEXT_ID);
 
 
-        SECoP_S_addModule("mod5");
-            SECoP_S_addPropertyString("description", "test readable");
-            SECoP_S_addPropertyJSON("interface_classes", "[\"Readable\"]");
-            SECoP_S_addPropertyDouble("pollinterval", 10.0);
+        SECoP_S_addModule("mod4",CONTEXT_ID);
+            SECoP_S_addPropertyString("description", "Hotplate drivable",CONTEXT_ID);
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Writable\",\"Readable\"]",CONTEXT_ID);
+            SECoP_S_addPropertyDouble("pollinterval", 10.0,CONTEXT_ID);
 
-            SECoP_S_addReadableParameter("value", &Local_GetTemperature);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}");
-                SECoP_S_addPropertyString("description", "actual temperature");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
-            SECoP_S_addReadableParameter("status", &Local_GetStatus);
-                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}");
-                SECoP_S_addPropertyString("description", "machine status");
-                SECoP_S_addPropertyDouble("pollinterval", 1.0);
+            SECoP_S_addReadableParameter("value", &Local_GetTemperature,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "actual temperature",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addReadableParameter("status", &Local_GetStatus,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "machine status",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "target temperature",CONTEXT_ID);
 
 
-    SECoP_S_nodeComplete();
+        SECoP_S_addModule("mod5",CONTEXT_ID);
+            SECoP_S_addPropertyString("description", "test readable",CONTEXT_ID);
+            SECoP_S_addPropertyJSON("interface_classes", "[\"Readable\"]",CONTEXT_ID);
+            SECoP_S_addPropertyDouble("pollinterval", 10.0,CONTEXT_ID);
+
+            SECoP_S_addReadableParameter("value", &Local_GetTemperature,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "actual temperature",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+            SECoP_S_addReadableParameter("status", &Local_GetStatus,CONTEXT_ID);
+                SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",CONTEXT_ID);
+                SECoP_S_addPropertyString("description", "machine status",CONTEXT_ID);
+                SECoP_S_addPropertyDouble("pollinterval", 1.0,CONTEXT_ID);
+
+
+    SECoP_S_nodeComplete(CONTEXT_ID);
 
 #endif /**/
     SECoP_S_showErrors();
 //  printf("%p", &Local_SetTarget); fflush(stdout);
 //  QTimer::singleShot(60000, &app, SLOT(quit()));
     int iResult(app.exec());
-    SECoP_S_doneLibrary(false);
+    SECoP_S_doneLibrary(false,CONTEXT_ID);
     delete pSimulator;
     pSimulator = nullptr;
     return iResult;
