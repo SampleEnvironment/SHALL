@@ -416,6 +416,7 @@ int main(int argc, char *argv[])
         SECoP_S_showErrors();
 */
     printf("%s\n", "hier");
+    printf("ContextID: %s\n", CONTEXT_ID);
     fflush(stdout);
 
     SECoP_S_createNode("HZB_Testnode1", "TestNode", 2056,CONTEXT_ID);
