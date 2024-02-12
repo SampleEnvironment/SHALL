@@ -165,7 +165,10 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pAp
         }
     }
     else
+    {
         SECoP_S_initLibraryHelper();
+        g_pApplication = pApplication;
+    }
     return SECoP_S_SUCCESS;
 }
 
