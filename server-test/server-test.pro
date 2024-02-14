@@ -5,7 +5,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("need Qt 5.x or higher with C++11 support")
 }
 
-QT           += core gui network widgets
+QT           += core gui network widgets concurrent
 CONFIG       += c++11
 win32:CONFIG += console
 TEMPLATE      = app
@@ -64,3 +64,4 @@ HEADERS       = \
 
 SOURCES       = \
    main.cpp \
+
