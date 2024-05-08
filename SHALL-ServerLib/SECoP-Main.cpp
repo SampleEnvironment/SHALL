@@ -7,6 +7,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include <QTcpSocket>
 #include <thread>
 #include <QVector>
+#include <QMap>
 #include <QMutexLocker>
 #include <QDateTime>
 #include <QHostAddress>

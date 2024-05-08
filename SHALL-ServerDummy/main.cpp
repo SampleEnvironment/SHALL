@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
             SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"bool\"}");
             SECoP_S_addPropertyString("description", "if true ramp rate is activated");*/
 #if 1
-    Node2(CONTEXT_ID_N2,"Zweite_Node",2056);
+    //Node2(CONTEXT_ID_N2,"Zweite_Node",2056);
 
 #endif /**/
     SECoP_S_showErrors();

@@ -192,9 +192,9 @@ int main(int argc, char *argv[])
 
 
 
-    while(1){
 
-    }
+    QThread::sleep(20);
+
 
 
     SECoP_S_doneLibrary(true,context_id_N2);
