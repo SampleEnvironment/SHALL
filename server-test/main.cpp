@@ -1,5 +1,7 @@
 #include <QCoreApplication>
 #include "SECoP.h"
+#include "SECoP-Main.h"
+
 #include <QRandomGenerator>
 #include <QThread>
 #include <QFuture>
@@ -193,11 +195,46 @@ int main(int argc, char *argv[])
 
 
 
-    QThread::sleep(20);
-
+    QThread::sleep(2);
 
 
     SECoP_S_doneLibrary(true,context_id_N2);
+
+    SECoP_S_doneLibrary(true,context_id_N2);
+
+
+
+
+
+    future1 = QtConcurrent::run(&Node1, context_id, name_default, port_default);
+
+
+
+    future2 = QtConcurrent::run(&Node1, context_id_N2, name_default_N2, port_default_N2);
+
+
+    watcher.setFuture(future1);
+    watcher.setFuture(future2);
+
+    // Wait for all futures to finish
+    watcher.waitForFinished();
+
+   /// SECoP_S_doneLibrary(true,context_id);
+
+
+    SECoP_S_showStatusWindow(true);
+
+
+
+
+
+    QThread::sleep(2);
+
+
+    SECoP_S_doneLibrary(true,context_id_N2);
+
+    SECoP_S_doneLibrary(true,context_id_N2);
+
 
 
 }

@@ -504,24 +504,11 @@ SECoP_S_Main::~SECoP_S_Main()
     }
 
     // Check if there are any nodes left in the ContextID map
-    if (!m_ContextIdMap.isEmpty()){
-        QMap<QString, SECoP_S_Node*>::const_iterator it;
-        for (it = m_ContextIdMap.constBegin(); it != m_ContextIdMap.constEnd(); ++it) {
-            // Access the key and value using it.key() and it.value()
-            QString Key_ContextID = it.key();
-            SECoP_S_Node* pValue_Node = it.value();
-
-            if( pValue_Node != nullptr )
-                delete pValue_Node;
-
-            m_ContextIdMap.remove(Key_ContextID);
-        }
-
-        m_ContextIdMap.clear();
+    m_ContextIdMap.clear();
 
 
 
-    }
+
 
     if (m_pGui != nullptr)
     {
