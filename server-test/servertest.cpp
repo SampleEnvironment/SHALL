@@ -1,3 +1,4 @@
+#include <QtTest>
 #include <QCoreApplication>
 #include "SECoP.h"
 #include "SECoP-Main.h"
@@ -151,8 +152,26 @@ void Node1(const char* context_id,const char* Node_id,unsigned short port){
     SECoP_S_nodeComplete(context_id);
 }
 
-int main(int argc, char *argv[])
+
+
+
+class context : public QObject
 {
+    Q_OBJECT
+
+public:
+    context();
+    ~context();
+
+private slots:
+    void test_case1();
+};
+
+context::context() {}
+
+context::~context() {}
+
+void context::test_case1() {
     const char* context_id = "default";
     const char* context_id_N2 = "default_n2";
 
@@ -186,7 +205,7 @@ int main(int argc, char *argv[])
     // Wait for all futures to finish
     watcher.waitForFinished();
 
-   /// SECoP_S_doneLibrary(true,context_id);
+    /// SECoP_S_doneLibrary(true,context_id);
 
 
     SECoP_S_showStatusWindow(true);
@@ -219,7 +238,7 @@ int main(int argc, char *argv[])
     // Wait for all futures to finish
     watcher.waitForFinished();
 
-   /// SECoP_S_doneLibrary(true,context_id);
+    /// SECoP_S_doneLibrary(true,context_id);
 
 
     SECoP_S_showStatusWindow(true);
@@ -230,11 +249,11 @@ int main(int argc, char *argv[])
 
     QThread::sleep(2);
 
-
     SECoP_S_doneLibrary(true,context_id_N2);
-
-    SECoP_S_doneLibrary(true,context_id_N2);
-
 
 
 }
+
+QTEST_MAIN(context)
+
+#include "servertest.moc"

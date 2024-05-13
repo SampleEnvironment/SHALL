@@ -11,4 +11,4 @@ SUBDIRS +=	SHALL-VariantLib \
 		SHALL-ServerDummy \
 		SHALL-ClientLib \
 		SHALL-ClientDummy \
-		server-test
+                server-test

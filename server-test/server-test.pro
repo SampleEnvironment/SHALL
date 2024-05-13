@@ -5,8 +5,8 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("need Qt 5.x or higher with C++11 support")
 }
 
-QT           += core gui network widgets concurrent
-CONFIG       += c++11
+QT           += core gui network widgets concurrent testlib
+CONFIG       += c++11 testcase
 win32:CONFIG += console
 TEMPLATE      = app
 INCLUDEPATH  += ../SHALL-ServerLib
@@ -47,7 +47,7 @@ win32-msvc* {
 # any feature of Qt which as been marked deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
 # deprecated API in order to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
+DEFINES += QT_DEPRECATED_WARNINGS QT_NO_INFO_OUTPUT
 
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -55,7 +55,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 HEADERS       = \
-   SECoPModul.h \
+   \
    ../SHALL-ServerLib/SECoP.h \
    ../SHALL-ServerLib/SECoP-defines.h \
    ../SHALL-ServerLib/SECoP-types.h \
@@ -63,5 +63,5 @@ HEADERS       = \
    ../SHALL-VariantLib/SECoP-Variant.h
 
 SOURCES       = \
-   main.cpp \
+    servertest.cpp
 
