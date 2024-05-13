@@ -158,6 +158,7 @@ private:
 
     friend class SECoP_S_Node;
     friend class SECoP_S_Main::ActionEntry;
+    friend class context_testing;
 };
 
 #endif /*__SECOP_MAIN_H__3BB08092_2314_4A0B_B6CE_4D173DB4123080__*/
