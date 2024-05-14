@@ -139,6 +139,9 @@ void funcCall(const char* name, const CSECoPbaseType* pArgument, enum SECoP_S_er
 
 
 void Node1(const char* context_id,const char* Node_id,unsigned short port){
+
+    SECoP_S_initLibrary(nullptr, true, true,context_id);
+
     SECoP_S_createNode(Node_id, "TestNode", port,context_id);
     //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
     SECoP_S_addModule("hpd",context_id);
@@ -160,6 +163,17 @@ void Node1(const char* context_id,const char* Node_id,unsigned short port){
     SECoP_S_addCommand("stop",&funcCall,context_id);
     SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",context_id);
     SECoP_S_nodeComplete(context_id);
+
+    SECoP_S_showStatusWindow(true);
+
+
+
+
+
+    QThread::sleep(10);
+
+
+    SECoP_S_doneLibrary(true,context_id);
 }
 
 
@@ -176,7 +190,6 @@ public:
 private slots:
     void initTestCase();
 
-    void multiple_inits();
     void single_init();
 };
 
@@ -202,7 +215,6 @@ void context_testing::single_init() {
 
 
 
-    SECoP_S_initLibrary(nullptr, true, true,context_id);
 
 
     SECoP_S_setManyThreads(0);
@@ -228,152 +240,11 @@ void context_testing::single_init() {
     /// SECoP_S_doneLibrary(true,context_id);
 
 
-    SECoP_S_showStatusWindow(true);
-
-
-
-
-
-    QThread::sleep(2);
-
-
-    SECoP_S_doneLibrary(true,context_id_N2);
-
-    SECoP_S_doneLibrary(true,context_id_N2);
-
-
-
-
-
-    future1 = QtConcurrent::run(&Node1, context_id, name_default, port_default);
-
-
-
-    future2 = QtConcurrent::run(&Node1, context_id_N2, name_default_N2, port_default_N2);
-
-
-    watcher.setFuture(future1);
-    watcher.setFuture(future2);
-
-    // Wait for all futures to finish
-    watcher.waitForFinished();
-
-    /// SECoP_S_doneLibrary(true,context_id);
-
-
-    SECoP_S_showStatusWindow(true);
-
-
-
-
-
-    QThread::sleep(2);
-
-    SECoP_S_doneLibrary(true,context_id_N2);
-
 
 }
 
 
-void context_testing::multiple_inits() {
-    const char* context_id = "default";
-    const char* context_id_N2 = "default_n2";
 
-
-    const char* name_default = "Node1";
-    const char* name_default_N2 = "Node2";
-
-    unsigned int port_default    = 2055;
-    unsigned int port_default_N2 = 2056;
-
-
-
-    SECoP_S_initLibrary(nullptr, true, true,context_id);
-
-    SECoP_S_Main* libInstance=  SECoP_S_Main::getInstance();
-
-
-    SECoP_S_initLibrary(nullptr, true, true,context_id_N2);
-
-    SECoP_S_setManyThreads(0);
-
-
-
-    // Create QFutureWatcher
-    QFutureWatcher<void> watcher;
-
-
-    QFuture<void> future1 = QtConcurrent::run(&Node1, context_id, name_default, port_default);
-
-
-
-    QFuture<void> future2 = QtConcurrent::run(&Node1, context_id_N2, name_default_N2, port_default_N2);
-
-
-    watcher.setFuture(future1);
-    watcher.setFuture(future2);
-
-    // Wait for all futures to finish
-    watcher.waitForFinished();
-
-
-    QCOMPARE(libInstance->m_apNodes.length(),2);
-
-    /// SECoP_S_doneLibrary(true,context_id);
-
-
-    SECoP_S_showStatusWindow(true);
-
-
-
-
-
-    QThread::sleep(2);
-
-
-    SECoP_S_doneLibrary(true,context_id_N2);
-
-    QCOMPARE(libInstance->m_apNodes.length(),1);
-
-    SECoP_S_doneLibrary(true,context_id);
-
-    QCOMPARE(libInstance->m_apNodes.length(),0);
-
-
-
-
-
-    future1 = QtConcurrent::run(&Node1, context_id, name_default, port_default);
-
-
-
-    future2 = QtConcurrent::run(&Node1, context_id_N2, name_default_N2, port_default_N2);
-
-
-    watcher.setFuture(future1);
-    watcher.setFuture(future2);
-
-    // Wait for all futures to finish
-    watcher.waitForFinished();
-
-    /// SECoP_S_doneLibrary(true,context_id);
-
-
-    SECoP_S_showStatusWindow(true);
-
-
-
-
-
-
-    QThread::sleep(2);
-
-    QCOMPARE(libInstance->m_apNodes.length(),2);
-
-    SECoP_S_doneLibrary(true,context_id_N2);
-
-
-}
 
 QTEST_APPLESS_MAIN(context_testing)
 

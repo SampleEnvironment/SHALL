@@ -114,6 +114,9 @@ static std::thread* g_pThread = nullptr;
  */
 static volatile bool g_bInitialized = false;
 
+
+static QMutex*   g_pMutex =  new QMutex(QMutex::Recursive);
+
 /* forward declarations */
 static void SECoP_S_initLibraryThread(void);
 static void SECoP_S_initLibraryHelper(void);
@@ -141,11 +144,15 @@ static void SECoP_S_MessageHandler(QtMsgType iType, const QMessageLogContext &co
  */
 extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, int bGUI, int bEnableFunctionPointers, const char* szContextID)
 {
+
+    QMutexLocker locker(g_pMutex);
+
     if (g_bInitialized || g_pSECoPMain != nullptr || g_pThread != nullptr || g_pOldMessageHandler != nullptr)
     {
         g_pSECoPMain->cleanUp(true,szContextID);
         g_bShowGUI = (bGUI != 0);
         SECoP_S_showStatusWindow(g_bShowGUI);
+
         return SECoP_S_SUCCESS;
     }
     if (g_pOldMessageHandler == nullptr) // install message logger
@@ -205,7 +212,7 @@ void SECoP_S_initLibraryHelper(void)
  */
 void SECoP_S_initLibraryExit()
 {
-    SECoP_S_initLibraryExitHelper(true,nullptr);
+    SECoP_S_initLibraryExitHelper(true,"default");
 }
 
 /**
@@ -248,6 +255,7 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
         g_pSECoPMain = nullptr;
     if (g_pThread != nullptr)
     {
+
         g_pThread->join();
         delete g_pThread;
         g_pThread = nullptr;
@@ -526,6 +534,8 @@ SECoP_S_Main::~SECoP_S_Main()
     }
     if (g_pApplication != nullptr)
         QTimer::singleShot(0, g_pApplication, SLOT(quit()));
+
+
 }
 
 /**
@@ -838,6 +848,8 @@ enum SECoP_S_error SECoP_S_Main::createNode(QString szContextID, QString szID, Q
  */
 void SECoP_S_Main::createNode(QString szContextID,QString szID, QString szDesc, QString szInterface, quint16 wPort, SECoP_S_error* piResult)
 {
+    QMutexLocker locker(m_pMutex);
+
     if (szContextID.isEmpty()){
         *piResult = SECoP_S_ERROR_INTERNAL; //TODO create new error message
         return;
