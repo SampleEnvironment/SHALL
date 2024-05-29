@@ -418,7 +418,7 @@ void Node2(const char* context_id, const char* Node_id,unsigned short port){
 }
 
 
-void Node1(const char* context_id,const char* Node_id,unsigned short port){
+void Node(const char* context_id,const char* Node_id,unsigned short port){
     SECoP_S_createNode(Node_id, "TestNode", port,context_id);
     //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
     SECoP_S_addModule("hpd",context_id);
@@ -599,8 +599,8 @@ int main(int argc, char *argv[])
     printf("%s\n", "hier");
     printf("ContextID: %s\n", CONTEXT_ID);
     fflush(stdout);
-
-    Node1(CONTEXT_ID,"Erste_Node",2055);
+    
+    Node(CONTEXT_ID,"Erste_Node",2055);
 
     SECoP_S_initLibrary(&app, true, true,CONTEXT_ID_N2);
 /*      SECoP_S_addWritableParameter("ramp", &Local_GetRamp, &Local_SetRamp);

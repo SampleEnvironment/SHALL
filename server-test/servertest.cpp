@@ -138,7 +138,7 @@ void funcCall(const char* name, const CSECoPbaseType* pArgument, enum SECoP_S_er
 
 
 
-void Node1(const char* context_id,const char* Node_id,unsigned short port){
+void Node(const char* context_id,const char* Node_id,unsigned short port){
 
     SECoP_S_initLibrary(nullptr, true, true,context_id);
 
@@ -178,6 +178,40 @@ void Node1(const char* context_id,const char* Node_id,unsigned short port){
 
 
 
+void Node_no_wait(const char* context_id,const char* Node_id,unsigned short port){
+
+    SECoP_S_initLibrary(nullptr, true, true,context_id);
+
+    SECoP_S_createNode(Node_id, "TestNode", port,context_id);
+    //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
+    SECoP_S_addModule("hpd",context_id);
+    SECoP_S_addPropertyString("description", "Hotplate drivable",context_id);
+    SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]",context_id);
+    SECoP_S_addPropertyDouble("pollinterval", 10.0,context_id);
+    SECoP_S_addReadableParameter("value", &Local_GetTemperature,context_id);
+    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",context_id);
+    SECoP_S_addPropertyDouble("pollinterval", 1.0,context_id);
+    SECoP_S_addPropertyString("description", "actual temperature",context_id);
+    SECoP_S_addReadableParameter("status", &Local_GetStatus,context_id);
+    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",context_id);
+    SECoP_S_addPropertyString("description", "machine status",context_id);
+    SECoP_S_addPropertyDouble("pollinterval", 1.0,context_id);
+    //          SECoP_S_addReadableParameter2("useramp2", &SECoPModul::getRampBool, SECoPModul::theInstance);
+    SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,context_id);
+    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",context_id);
+    SECoP_S_addPropertyString("description", "target temperature",context_id);
+    SECoP_S_addCommand("stop",&funcCall,context_id);
+    SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",context_id);
+    SECoP_S_nodeComplete(context_id);
+
+    SECoP_S_showStatusWindow(true);
+
+
+
+
+}
+
+
 
 class context_testing : public QObject
 {
@@ -190,7 +224,15 @@ public:
 private slots:
     void initTestCase();
 
+    void cleanup();
+
     void single_init();
+
+    void delete_one_node();
+
+
+
+
 };
 
 context_testing::context_testing() {}
@@ -201,6 +243,12 @@ void context_testing::initTestCase(){
     qInstallMessageHandler(noMessageOutput);
 
 };
+
+void context_testing::cleanup(){
+    QThread::sleep(1);
+    SECoP_S_doneLibrary(false,"default");
+    QThread::sleep(1);
+}
 
 void context_testing::single_init() {
     const char* context_id = "default";
@@ -214,9 +262,6 @@ void context_testing::single_init() {
     unsigned int port_default_N2 = 2056;
 
 
-
-
-
     SECoP_S_setManyThreads(0);
 
 
@@ -224,11 +269,11 @@ void context_testing::single_init() {
     QFutureWatcher<void> watcher;
 
 
-    QFuture<void> future1 = QtConcurrent::run(&Node1, context_id, name_default, port_default);
+    QFuture<void> future1 = QtConcurrent::run(&Node, context_id, name_default, port_default);
 
 
 
-    QFuture<void> future2 = QtConcurrent::run(&Node1, context_id_N2, name_default_N2, port_default_N2);
+    QFuture<void> future2 = QtConcurrent::run(&Node, context_id_N2, name_default_N2, port_default_N2);
 
 
     watcher.setFuture(future1);
@@ -237,11 +282,55 @@ void context_testing::single_init() {
     // Wait for all futures to finish
     watcher.waitForFinished();
 
-    /// SECoP_S_doneLibrary(true,context_id);
 
 
 
 }
+
+
+void context_testing::delete_one_node() {
+    const char* context_id_1 = "delete_one_node1";
+    const char* context_id_2 = "delete_one_node2";
+
+
+    const char* node1 = "Nodea";
+    const char* node2 = "Nodeb";
+
+    unsigned int port1    = 2057;
+    unsigned int port2 = 2058;
+
+
+    SECoP_S_setManyThreads(0);
+
+
+
+
+    Node_no_wait( context_id_1, node1, port1);
+
+
+    QThread::sleep(1);
+
+
+    Node_no_wait(context_id_2, node2, port2);
+
+
+
+    QThread::sleep(2);
+
+    SECoP_S_doneLibrary(true,context_id_1);
+
+
+    QThread::sleep(5);
+
+
+
+
+
+
+}
+
+
+
 
 
 

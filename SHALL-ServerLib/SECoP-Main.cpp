@@ -638,6 +638,7 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
 
             if (pNode != nullptr)
             {
+                m_pGui->removeNode(pNode);
                 QMutexLocker locker(m_pMutex);
                 for (int i = 0; i < m_aStoredCommands.size(); ++i)
                 {

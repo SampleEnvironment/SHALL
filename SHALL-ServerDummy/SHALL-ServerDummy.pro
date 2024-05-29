@@ -38,7 +38,7 @@ equals(QMAKE_TARGET.arch,x86_64)|equals(QMAKE_TARGET.arch,amd64)|equals(QMAKE_TA
 
 DESTDIR = ../bin
 win32-msvc* {
-  LIBS += $$quote(../lib/$${SERVERLIB}.lib) $$quote(../lib/$${VARIANTLIB}.lib)
+  LIBS += $$quote(-L../lib) -l$${SERVERLIB} -l$${VARIANTLIB}
 } else {
   LIBS += $$quote(-L../lib) -l$${SERVERLIB} -l$${VARIANTLIB}
 }
