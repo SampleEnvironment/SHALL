@@ -5,7 +5,11 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("need Qt 5.x or higher with C++11 support")
 }
 
-QT           += core gui network widgets concurrent testlib
+GOOGLETEST_DIR = "D:/shall-repos/googletest"
+
+include(gtest_dependency.pri)
+
+QT           += core gui network widgets concurrent
 CONFIG       += c++11 testcase
 win32:CONFIG += console
 TEMPLATE      = app
@@ -62,6 +66,6 @@ HEADERS       = \
    ../SHALL-ServerLib/SECoP-exports.h \
    ../SHALL-VariantLib/SECoP-Variant.h
 
-SOURCES       = \
-    servertest.cpp
-
+SOURCES += \
+        main.cpp \
+        tst_context.cpp

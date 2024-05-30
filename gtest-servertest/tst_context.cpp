@@ -1,4 +1,9 @@
-#include <QtTest>
+
+#include <gmock/gmock-matchers.h>
+#include <gtest/gtest.h>
+
+using namespace testing;
+
 #include <QCoreApplication>
 #include "SECoP.h"
 #include "SECoP-Main.h"
@@ -213,44 +218,21 @@ void Node_no_wait(const char* context_id,const char* Node_id,unsigned short port
 
 
 
-class context_testing : public QObject
-{
-    Q_OBJECT
 
-public:
-    context_testing();
-    ~context_testing();
+// void context_testing::initTestCase(){
+//     //qInstallMessageHandler(noMessageOutput);
 
-private slots:
-    void initTestCase();
+// };
 
-    void cleanup();
+// void context_testing::cleanup(){
+//     QThread::sleep(1);
+//     SECoP_S_doneLibrary(false,"default");
+//     QThread::sleep(1);
+// }
 
-    void single_init();
-
-    void delete_one_node();
+TEST(seerverlib_test, single_init){
 
 
-
-
-};
-
-context_testing::context_testing() {}
-
-context_testing::~context_testing() {}
-
-void context_testing::initTestCase(){
-    qInstallMessageHandler(noMessageOutput);
-
-};
-
-void context_testing::cleanup(){
-    QThread::sleep(1);
-    SECoP_S_doneLibrary(false,"default");
-    QThread::sleep(1);
-}
-
-void context_testing::single_init() {
     const char* context_id = "default";
     const char* context_id_N2 = "default_n2";
 
@@ -262,7 +244,6 @@ void context_testing::single_init() {
     unsigned int port_default_N2 = 2056;
 
 
-    SECoP_S_setManyThreads(0);
 
 
     // Create QFutureWatcher
@@ -287,8 +268,7 @@ void context_testing::single_init() {
 
 }
 
-
-void context_testing::delete_one_node() {
+TEST(seerverlib_test, delete_one_node){
     const char* context_id_1 = "delete_one_node1";
     const char* context_id_2 = "delete_one_node2";
 
@@ -335,6 +315,7 @@ void context_testing::delete_one_node() {
 
 
 
-QTEST_APPLESS_MAIN(context_testing)
 
-#include "servertest.moc"
+
+
+
