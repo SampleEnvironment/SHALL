@@ -79,6 +79,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 
 #include <stdio.h>
 
+
 //strcasecmp() is a function specified by posix, which MSVC does not support
 #ifdef _MSC_VER
 //not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw

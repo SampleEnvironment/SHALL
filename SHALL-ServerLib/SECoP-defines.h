@@ -6,7 +6,11 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #define __SECOP_GLOBAL_H__7DDAD5D3_12B7_411E_B88D_6435933EFCF7__
 
 // SHALL_EXPORT is used to mark exported functions (needed by some compilers)
-#if !defined(SHALL_EXPORT)
+#if defined(NO_EXPORT)
+#   if !defined(SHALL_EXPORT)
+#       define SHALL_EXPORT
+#   endif
+#elif !defined(SHALL_EXPORT)
 #  if defined(SHALL_LIBRARY)
 #    include <QtCore/qglobal.h>
 #    define SHALL_EXPORT Q_DECL_EXPORT
@@ -19,6 +23,9 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #    define SHALL_EXPORT
 #  endif
 #endif
+
+
+
 
 /**
  * \brief preprocessor helper macros to show line numbers as strings inside warnings

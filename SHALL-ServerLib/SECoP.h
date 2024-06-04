@@ -72,6 +72,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
  * \endcode
  */
 
+
 // some defines for library use
 #include "SECoP-defines.h"
 

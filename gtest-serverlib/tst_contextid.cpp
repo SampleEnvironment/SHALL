@@ -2,24 +2,32 @@
 #include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 
-using namespace testing;
-
-#include <QCoreApplication>
-#include "SECoP.h"
 #include "SECoP-Main.h"
+#include "SECoP-Node.h"
+
+#include "SECoP-StatusGui.h"
+
+//using namespace testing;
+
+
+#include "SECoP.h"
+
 
 #include <QRandomGenerator>
 #include <QThread>
 #include <QFuture>
 #include <QtConcurrent>
 #include <QFutureWatcher>
-
+#include <QWidget>
+#include <QList>
+#include <QMap>
 
 #define CONTEXT_ID "default"
 #define CONTEXT_ID_N2 "default_node2"
 
+// Forward declaration of TabInfo struct
+struct TabInfo;
 
-#include <QtGlobal>
 
 
 void noMessageOutput(QtMsgType, const QMessageLogContext &, const QString &)
@@ -143,9 +151,11 @@ void funcCall(const char* name, const CSECoPbaseType* pArgument, enum SECoP_S_er
 
 
 
-void Node(const char* context_id,const char* Node_id,unsigned short port){
+void Node(const char* context_id,const char* Node_id,unsigned short port,int sleep_time){
 
     SECoP_S_initLibrary(nullptr, true, true,context_id);
+
+    SECoP_S_setManyThreads(0);
 
     SECoP_S_createNode(Node_id, "TestNode", port,context_id);
     //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
@@ -175,10 +185,13 @@ void Node(const char* context_id,const char* Node_id,unsigned short port){
 
 
 
-    QThread::sleep(10);
+    QThread::sleep(sleep_time);
 
 
     SECoP_S_doneLibrary(true,context_id);
+
+
+    QThread::sleep(2);
 }
 
 
@@ -187,6 +200,9 @@ void Node_no_wait(const char* context_id,const char* Node_id,unsigned short port
 
     SECoP_S_initLibrary(nullptr, true, true,context_id);
 
+
+    SECoP_S_setManyThreads(0);
+
     SECoP_S_createNode(Node_id, "TestNode", port,context_id);
     //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
     SECoP_S_addModule("hpd",context_id);
@@ -215,6 +231,64 @@ void Node_no_wait(const char* context_id,const char* Node_id,unsigned short port
 
 
 }
+
+
+
+
+
+
+class Context_id_Test : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Code here will be called immediately after the constructor (right before each test).
+        qInstallMessageHandler(noMessageOutput);
+    }
+
+    void TearDown() override {
+        QThread::sleep(1);
+        SECoP_S_doneLibrary(false,"default");
+        QThread::sleep(1);
+    }
+
+
+
+    SECoP_S_StatusGui* get_statusGui(){
+        return SECoP_S_Main::getInstance()->m_pGui;
+    }
+
+    int get_TabListSize(){
+        SECoP_S_StatusGui* p_gui = get_statusGui();
+        return p_gui->m_aTabs.size();
+    }
+
+    SECoP_S_Node* get_NodeAtIdxTabList(int i){
+        SECoP_S_StatusGui* p_gui = get_statusGui();
+        return p_gui->m_aTabs[i].m_pNode;
+    }
+
+    QList<SECoP_S_Node*> get_NodeList(){
+        return SECoP_S_Main::getInstance()->m_apNodes;
+    }
+
+    QMap<QString, SECoP_S_Node*> get_ContextIDMap(){
+        return SECoP_S_Main::getInstance()->m_ContextIdMap;
+    }
+
+    int nodePosition(QString szNode){
+        return SECoP_S_Main::getInstance()->nodePosition(szNode);
+    }
+
+    SECoP_S_Node* getLastNode(QString szContextID){
+        return SECoP_S_Main::getInstance()->getLastNode(szContextID);
+    }
+
+    bool gui_is_Visible(){
+        return get_statusGui()->m_bShowGUI;
+    }
+
+
+
+};
 
 
 
@@ -224,13 +298,74 @@ void Node_no_wait(const char* context_id,const char* Node_id,unsigned short port
 
 // };
 
-// void context_testing::cleanup(){
-//     QThread::sleep(1);
-//     SECoP_S_doneLibrary(false,"default");
-//     QThread::sleep(1);
-// }
 
-TEST(seerverlib_test, single_init){
+TEST_F(Context_id_Test, delete_node) {
+
+    const char* context_id_1 = "delete_one_node1";
+    const char* context_id_2 = "delete_one_node2";
+
+
+    const char* node1 = "Node1";
+    const char* node2 = "Node2";
+
+    unsigned int port1    = 2057;
+    unsigned int port2 = 2058;
+
+
+    Node_no_wait( context_id_1, node1, port1);
+
+
+    Node_no_wait(context_id_2, node2, port2);
+
+
+    // both nodes initialized
+    ASSERT_EQ(Context_id_Test::get_NodeList().size(),2);
+
+
+
+    //delete Nodea
+    SECoP_S_deleteNode(node1);
+
+
+    ASSERT_EQ(Context_id_Test::get_NodeList().size(),1);
+    SECoP_S_Node * last_node = Context_id_Test::get_NodeList()[0];
+    ASSERT_TRUE(last_node->getNodeID() == node2);
+
+    ASSERT_EQ(get_TabListSize(),1);
+
+
+}
+
+
+TEST_F(Context_id_Test, gui_state) {
+
+    const char* context_id_1 = "delete_one_node1";
+    const char* context_id_2 = "delete_one_node2";
+
+
+    const char* node1 = "Node1";
+    const char* node2 = "Node2";
+
+    unsigned int port1    = 2057;
+    unsigned int port2 = 2058;
+
+
+    Node_no_wait( context_id_1, node1, port1);
+
+    ASSERT_TRUE(Context_id_Test::gui_is_Visible());
+
+    Node_no_wait(context_id_2, node2, port2);
+
+    ASSERT_TRUE(Context_id_Test::gui_is_Visible());
+
+    SECoP_S_doneLibrary(true,node2);
+
+    ASSERT_TRUE(Context_id_Test::gui_is_Visible());
+
+}
+
+
+TEST_F(Context_id_Test, concurrent) {
 
 
     const char* context_id = "default";
@@ -243,6 +378,7 @@ TEST(seerverlib_test, single_init){
     unsigned int port_default    = 2055;
     unsigned int port_default_N2 = 2056;
 
+    SECoP_S_initLibrary(nullptr, true, true,"null_id");
 
 
 
@@ -250,11 +386,11 @@ TEST(seerverlib_test, single_init){
     QFutureWatcher<void> watcher;
 
 
-    QFuture<void> future1 = QtConcurrent::run(&Node, context_id, name_default, port_default);
+    QFuture<void> future1 = QtConcurrent::run(&Node, context_id, name_default, port_default,10);
 
 
 
-    QFuture<void> future2 = QtConcurrent::run(&Node, context_id_N2, name_default_N2, port_default_N2);
+    QFuture<void> future2 = QtConcurrent::run(&Node, context_id_N2, name_default_N2, port_default_N2,5);
 
 
     watcher.setFuture(future1);
@@ -262,52 +398,17 @@ TEST(seerverlib_test, single_init){
 
     // Wait for all futures to finish
     watcher.waitForFinished();
-
-
-
-
-}
-
-TEST(seerverlib_test, delete_one_node){
-    const char* context_id_1 = "delete_one_node1";
-    const char* context_id_2 = "delete_one_node2";
-
-
-    const char* node1 = "Nodea";
-    const char* node2 = "Nodeb";
-
-    unsigned int port1    = 2057;
-    unsigned int port2 = 2058;
-
-
-    SECoP_S_setManyThreads(0);
-
-
-
-
-    Node_no_wait( context_id_1, node1, port1);
-
-
-    QThread::sleep(1);
-
-
-    Node_no_wait(context_id_2, node2, port2);
-
-
-
+    SECoP_S_showStatusWindow(true);
     QThread::sleep(2);
 
-    SECoP_S_doneLibrary(true,context_id_1);
 
+    SECoP_S_showStatusWindow(true);
 
     QThread::sleep(5);
 
 
-
-
-
-
 }
+
 
 
 

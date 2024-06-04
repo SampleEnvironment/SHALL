@@ -48,20 +48,7 @@ private slots:
 
 private:
     /// \brief The TabInfo struct stores data about a node tab
-    struct TabInfo
-    {
-        explicit TabInfo();
-        explicit TabInfo(const TabInfo &src);
-        TabInfo& operator=(const TabInfo &src);
-        /// the SEC-node, which is associated with the tab
-        SECoP_S_Node*     m_pNode;
-        /// the widget tab on the status window
-        QWidget*        m_pWidget;
-        /// the layouter for the tab
-        QGridLayout*    m_pLayout;
-        /// the logging output for the node
-        QPlainTextEdit* m_pLog;
-    };
+    struct TabInfo;
 
     /// \brief The ClientInfo struct stores data about a connected client
     struct ClientInfo
@@ -116,6 +103,26 @@ private:
     QList<LogEntry>      m_aLog;
 
     void logFunction(qint64 qiTime, SECoP_S_Node* pNode, QString szNode, QString szData, bool bNodeOnly);
+
+    friend class Context_id_Test;
 };
+
+
+
+struct SECoP_S_StatusGui::TabInfo
+{
+    explicit TabInfo();
+    explicit TabInfo(const TabInfo &src);
+    TabInfo& operator=(const TabInfo &src);
+    /// the SEC-node, which is associated with the tab
+    SECoP_S_Node*     m_pNode;
+    /// the widget tab on the status window
+    QWidget*        m_pWidget;
+    /// the layouter for the tab
+    QGridLayout*    m_pLayout;
+    /// the logging output for the node
+    QPlainTextEdit* m_pLog;
+};
+
 
 #endif // __SECOPSTATUSGUI_H_F4B91002_E277_4191_895C_DFEC74451EA5__

@@ -629,7 +629,7 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
         for (int iPos = 0; iPos < m_apNodes.size(); ++iPos)
         {
 
-            SECoP_S_Node* pNode(m_apNodes.takeAt(iPos));
+            SECoP_S_Node* pNode(m_apNodes[iPos]);
 
             // check if Node is part of current Context
             if(pNode->getContextID() != szContextID)
@@ -655,7 +655,7 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
 
 
                 if (m_ContextIdMap.contains(szContextID) && pNode == m_ContextIdMap.value(szContextID))
-                        m_ContextIdMap.insert(szContextID,nullptr);
+                    m_ContextIdMap.remove(szContextID);
 
 
                 QThread* pNodeThread(pNode->thread());
@@ -666,12 +666,15 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
                     pNode->moveToThread(pMySelfThread);
                     pNodeThread->quit();
                 }
+
+                m_apNodes.removeAt(iPos);
+
                 delete pNode;
             }
         }
         if (m_pGui != nullptr)
         {
-            if (m_pGui->isVisible())
+            if (m_pGui->isVisible() && m_ContextIdMap.size() < 1)
                 m_pGui->hide();
             m_pGui->clearLog();
         }
@@ -971,6 +974,7 @@ void SECoP_S_Main::deleteNode(QString szID, SECoP_S_error* piResult)
         iResult = SECoP_S_ERROR_INVALID_NODE;
     if (pNode != nullptr)
     {
+        m_pGui->removeNode(pNode);
         QThread* pNodeThread(pNode->thread());
         QThread* pMySelfThread(QThread::currentThread());
         if (pNodeThread != pMySelfThread)
