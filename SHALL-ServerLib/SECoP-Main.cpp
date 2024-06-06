@@ -279,7 +279,7 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
 static void SECoP_S_initLibraryThread(void)
 {
     g_iArgc = 1;
-    g_aszArgv[0] = g_szArgv0 = strdup("dummy");
+    g_aszArgv[0] = g_szArgv0 = _strdup("dummy");
     g_aszArgv[1] = nullptr;
     QApplication app(g_iArgc, g_aszArgv);
     g_pApplication = &app;
@@ -301,7 +301,7 @@ static void SECoP_S_initLibraryThread(void)
  */
 void SHALL_EXPORT SECoP_S_doneLibrary(int bNodeOnly,const char* szContextID)
 {
-    SECoP_S_showStatusWindow(0);
+    //SECoP_S_showStatusWindow(0);
     SECoP_S_initLibraryExitHelper(!bNodeOnly,szContextID);
 }
 
@@ -654,10 +654,6 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
                 }
 
 
-                if (m_ContextIdMap.contains(szContextID) && pNode == m_ContextIdMap.value(szContextID))
-                    m_ContextIdMap.remove(szContextID);
-
-
                 QThread* pNodeThread(pNode->thread());
                 QThread* pMySelfThread(QThread::currentThread());
                 if (pNodeThread != pMySelfThread)
@@ -672,10 +668,15 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
                 delete pNode;
             }
         }
+
+        // Remove entry in ContextID Map
+        if(m_ContextIdMap.contains(szContextID))
+            m_ContextIdMap.remove(szContextID);
+
         if (m_pGui != nullptr)
         {
-            if (m_pGui->isVisible() && m_ContextIdMap.size() < 1)
-                m_pGui->hide();
+            if (m_pGui->isVisible() && m_ContextIdMap.size() == 0 )
+                m_pGui->showGUI(false);
             m_pGui->clearLog();
         }
     }
@@ -944,7 +945,7 @@ enum SECoP_S_error SECoP_S_Main::deleteNode(QString szID)
  */
 void SECoP_S_Main::deleteNode(QString szID, SECoP_S_error* piResult)
 {
-    //TODO: Last Node needs to be reset to nullptr according to Context ID of deleted Node
+
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     int iPos(-1);
     SECoP_S_Node* pNode(nullptr);

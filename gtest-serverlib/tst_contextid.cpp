@@ -328,7 +328,7 @@ TEST_F(Context_id_Test, delete_node) {
 
 
     ASSERT_EQ(Context_id_Test::get_NodeList().size(),1);
-    SECoP_S_Node * last_node = Context_id_Test::get_NodeList()[0];
+    SECoP_S_Node * last_node = Context_id_Test::get_NodeList().at(0);
     ASSERT_TRUE(last_node->getNodeID() == node2);
 
     ASSERT_EQ(get_TabListSize(),1);
@@ -358,10 +358,25 @@ TEST_F(Context_id_Test, gui_state) {
 
     ASSERT_TRUE(Context_id_Test::gui_is_Visible());
 
-    SECoP_S_doneLibrary(true,node2);
+    SECoP_S_doneLibrary(true,context_id_2);
 
     ASSERT_TRUE(Context_id_Test::gui_is_Visible());
 
+    Node_no_wait(context_id_2, node2, port2);
+
+    //delete Nodea
+    SECoP_S_deleteNode(node1);
+
+    ASSERT_TRUE(Context_id_Test::gui_is_Visible());
+
+    SECoP_S_doneLibrary(true,context_id_2);
+
+
+    ASSERT_TRUE(Context_id_Test::gui_is_Visible());
+
+    SECoP_S_doneLibrary(true,context_id_1);
+
+    ASSERT_FALSE(Context_id_Test::gui_is_Visible());
 }
 
 
