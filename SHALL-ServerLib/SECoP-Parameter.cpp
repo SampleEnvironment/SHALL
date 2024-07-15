@@ -184,7 +184,7 @@ enum SECoP_S_error SECoP_S_Parameter::addPropertyInternal(QString szKey, const S
             pData = m_pValue->duplicate();
             if (pData == nullptr)
                 return SECoP_S_ERROR_NO_MEMORY;
-            if (!pData->importSECoP(pString->getValue().constData(), true) || !pData->isValid())
+            if (NoError != pData->importSECoP(pString->getValue().constData(), true) || !pData->isValid())
             {
                 delete pData;
                 return SECoP_S_ERROR_INVALID_VALUE;

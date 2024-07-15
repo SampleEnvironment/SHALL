@@ -4,7 +4,7 @@ TEMPLATE =	subdirs
 CONFIG  +=	ordered
 
 # Export gtest directory path
-GOOGLETEST_DIR = "D:/shall-repos/googletest"
+GOOGLETEST_DIR = "/home/qfj/git-repos/github/googletest"
 export(GOOGLETEST_DIR)
 
 
@@ -14,7 +14,7 @@ SUBDIRS +=	SHALL-VariantLib \
 		SHALL-ServerDummy \
 		SHALL-ClientLib \
 		SHALL-ClientDummy \
-                gtest-ServerLib
+                gtest-serverlib
 
 
 

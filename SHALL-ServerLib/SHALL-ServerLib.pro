@@ -6,7 +6,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
 }
 
 QT          += core gui network widgets
-CONFIG      += c++11
+CONFIG      += c++17
 TEMPLATE     = lib
 INCLUDEPATH += ../SHALL-VariantLib
 

@@ -355,42 +355,65 @@ void SECoP_S_Worker::internalChoiceChange(QString szCommandLine, SECoP_S_Module*
                                           SECoP_S_Parameter* pParameter, QString szValue)
 {
     SECoP_dataPtr pValue(pParameter->value());
-    if (pValue->importSECoP(szValue.toUtf8().constData(), true))
+
+
+
+    switch(pValue->importSECoP(szValue.toUtf8().constData(), true))
     {
-        bool bConnected(false);
-        quint64 qwRequestId(0);
-        if (!m_apActiveList.contains(pModule))
+        case NoError:
         {
-            bool bFound(false);
-            for (auto it = m_hRequestList.constBegin(); it != m_hRequestList.constEnd(); ++it)
+            bool bConnected(false);
+            quint64 qwRequestId(0);
+            if (!m_apActiveList.contains(pModule))
             {
-                if (it.key()->getParentModule() == pModule)
+                bool bFound(false);
+                for (auto it = m_hRequestList.constBegin(); it != m_hRequestList.constEnd(); ++it)
                 {
-                    bFound = true;
-                    break;
+                    if (it.key()->getParentModule() == pModule)
+                    {
+                        bFound = true;
+                        break;
+                    }
                 }
+                if (!bFound) // interested to signals of this module
+                    bConnected =
+                        connect(pModule, SIGNAL(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)),
+                        this, SLOT(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)),
+                        Qt::QueuedConnection);
             }
-            if (!bFound) // interested to signals of this module
-                bConnected =
-                    connect(pModule, SIGNAL(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)),
-                    this, SLOT(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)),
-                    Qt::QueuedConnection);
+            enum SECoP_S_error iErrorCode(pParameter->getParentModule()->changeParameter(pParameter, pValue, &qwRequestId));
+            if (iErrorCode < 0)
+            {
+                if (bConnected)
+                    disconnect(pModule, SIGNAL(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)),
+                    this, SLOT(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)));
+                writeError("change", QString("%1:%2").arg(pModule->getModuleID()).arg(pParameter->getParameterID()), iErrorCode,
+                           szCommandLine, QString());
+            }
+            else
+                m_hRequestList.insert(pParameter, SECoP_S_Worker::RequestEntry(szCommandLine, true, qwRequestId));
+
+            break;
         }
-        enum SECoP_S_error iErrorCode(pParameter->getParentModule()->changeParameter(pParameter, pValue, &qwRequestId));
-        if (iErrorCode < 0)
-        {
-            if (bConnected)
-                disconnect(pModule, SIGNAL(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)),
-                this, SLOT(newParameterValue(SECoP_S_Parameter*, quint64, SECoP_S_error, const SECoP_dataPtr, const SECoP_dataPtr, double)));
-            writeError("change", QString("%1:%2").arg(pModule->getModuleID()).arg(pParameter->getParameterID()), iErrorCode,
-                       szCommandLine, QString());
-        }
-        else
-            m_hRequestList.insert(pParameter, SECoP_S_Worker::RequestEntry(szCommandLine, true, qwRequestId));
-    }
-    else
+
+        case BadValue:
+    {
         writeError("change", QString("%1:%2").arg(pModule->getModuleID()).arg(pParameter->getParameterID()),
                    SECoP_S_ERROR_INVALID_VALUE, szCommandLine, szValue);
+        break;
+    }
+
+        case RangeError:
+    {
+        writeError("change", QString("%1:%2").arg(pModule->getModuleID()).arg(pParameter->getParameterID()),
+                   SECoP_S_ERROR_OUT_OF_RANGE, szCommandLine, szValue);
+        break;
+    }
+    }
+
+
+
+
 }
 
 /**
@@ -585,7 +608,7 @@ void SECoP_S_Worker::choiceCommand(QString szCommandLine, QString szCommand)
     SECoP_dataPtr pArgument(pCommand->getArgument()->duplicate());
     if (pArgument.get() != nullptr)
     {
-        if (!pArgument->importSECoP(szArgument.toUtf8().constData(), true))
+        if (NoError != pArgument->importSECoP(szArgument.toUtf8().constData(), true))
         {
             writeError("do", szCommand, SECoP_S_ERROR_INVALID_VALUE, szCommandLine, QString());
             return;
@@ -794,6 +817,9 @@ void SECoP_S_Worker::writeError(QString szAction, QString szSpecifier, enum SECo
         case SECoP_S_ERROR_INVALID_NODE:
         case SECoP_S_ERROR_SYNTAX:
             a.push_back(SECoP_json("ProtocolError"));
+            break;
+        case SECoP_S_ERROR_OUT_OF_RANGE:
+            a.push_back(SECoP_json("RangeError"));
             break;
         case SECoP_S_ERROR_INTERNAL:
         default:

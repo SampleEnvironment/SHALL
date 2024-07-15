@@ -1481,6 +1481,14 @@ class CSECoPtuple;
 class CSECoParray;
 class CSECoPcommand;
 
+
+enum SECoP_Value_error
+{
+    NoError         = 0,
+    BadValue        = 1,
+    RangeError      = 2
+};
+
 /**
  * \brief a reference counted SECoP variant object
  */
@@ -1511,8 +1519,8 @@ public:
     static CSECoPbaseType* createSECoP(SECoP_json json, bool bAllowCommand);
     static CSECoPbaseType* importSECoP(const char* szValue);
     static CSECoPbaseType* importSECoP(const SECoP_json &data);
-    bool importSECoP(const char* szValue, bool bStrict);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    SECoP_Value_error importSECoP(const char* szValue, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     SECoP_json exportType() const;
     virtual SECoP_json exportSECoPjson() const;
     QByteArray exportSECoP(bool bNull = true) const;
@@ -1547,7 +1555,7 @@ public:
     virtual SECoP_V_compareResult compareValue(const CSECoPbaseType* pOther) const;
     virtual bool isValid() const;
     virtual bool clear();
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPnull(const CSECoPnull* pOther); // special copy constructor for "duplicate"
@@ -1564,7 +1572,7 @@ public:
     virtual bool compareType(const CSECoPbaseType* pOther) const;
     virtual SECoP_V_compareResult compareValue(const CSECoPbaseType* pOther) const;
     virtual bool clear();
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
     virtual bool getValue(T &value) const;
     virtual bool setValue(const T value);
@@ -1720,7 +1728,7 @@ public:
     virtual bool getBoolValue(bool &bValue) const;
     virtual bool setValue(const bool bValue);
     virtual bool setValue(const long long llValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleBool(const CSECoPsimpleBool* pOther); // special copy constructor for "duplicate"
@@ -1745,7 +1753,7 @@ public:
     virtual bool appendValue(const bool bValue);
     virtual bool appendValue(const long long llValue);
     virtual bool appendValue(const CSECoPsimpleBool &value);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayBool(const CSECoParrayBool* pOther); // special copy constructor for "duplicate"
@@ -1767,7 +1775,7 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     virtual bool setValue(const double dValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleDouble(const CSECoPsimpleDouble* pOther); // special copy constructor for "duplicate"
@@ -1791,7 +1799,7 @@ public:
     virtual bool setArray(const double* pData, unsigned int uItems);
     virtual bool appendValue(const double dValue);
     virtual bool appendValue(const CSECoPsimpleDouble &value);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayDouble(const CSECoParrayDouble* pOther); // special copy constructor for "duplicate"
@@ -1813,7 +1821,7 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     virtual bool setValue(const long long llValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleInt(const CSECoPsimpleInt* pOther); // special copy constructor for "duplicate"
@@ -1837,7 +1845,7 @@ public:
     virtual bool setArray(const long long* pData, unsigned int uItems);
     virtual bool appendValue(const long long llValue);
     virtual bool appendValue(const CSECoPsimpleInt &value);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayInt(const CSECoParrayInt* pOther); // special copy constructor for "duplicate"
@@ -1861,7 +1869,7 @@ public:
     virtual bool setMinMaxValue(double dMinimum, double dMaximum);
     virtual bool getValue(double &dValue) const;
     virtual bool setValue(const double dValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPsimpleScaled(const CSECoPsimpleScaled* pOther); // special copy constructor for "duplicate"
@@ -1892,7 +1900,7 @@ public:
     virtual bool setArray(const double* pData, unsigned int uItems);
     virtual bool appendValue(const double dValue);
     virtual bool appendValue(const CSECoPsimpleScaled &value);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParrayScaled(const CSECoParrayScaled* pOther); // special copy constructor for "duplicate"
@@ -1921,7 +1929,7 @@ public:
     virtual bool isValid() const;
     virtual bool clear();
     virtual bool setValue(const long long llValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
     virtual bool addItem(long long llValue, const char* szName);
 protected:
@@ -1946,7 +1954,7 @@ public:
     virtual bool clear();
     virtual bool setValue(unsigned int uIndex, const long long llValue);
     virtual bool setArray(const long long* pData, unsigned int uItems);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual bool appendValue(const long long llValue);
     virtual bool appendValue(const CSECoPsimpleEnum &value);
     virtual SECoP_json exportSECoPjson() const;
@@ -1972,7 +1980,7 @@ public:
     virtual QByteArray getValue() const;
     virtual bool setValue(QByteArray abyValue);
     virtual void getMinMaxSize(unsigned int &uMinimum, unsigned int &uMaximum) const;
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPstring(const CSECoPstring* pOther); // special copy constructor for "duplicate"
@@ -2009,7 +2017,7 @@ public:
     virtual bool removeItem(unsigned int uIndex);
     virtual bool appendValue(const char* szName, CSECoPbaseType* pValue);
     virtual bool appendValue(const char* szName, const CSECoPbaseType* pValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPstruct(const CSECoPstruct* pOther); // special copy constructor for "duplicate"
@@ -2040,7 +2048,7 @@ public:
     virtual bool setValue(unsigned int uIndex, const CSECoPbaseType* pValue);
     virtual bool appendValue(CSECoPbaseType* pValue);
     virtual bool appendValue(const CSECoPbaseType* pValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPtuple(const CSECoPtuple* pOther); // special copy constructor for "duplicate"
@@ -2073,7 +2081,7 @@ public:
     virtual CSECoPbaseType* getValue(unsigned int uIndex) const;
     virtual bool appendValue(CSECoPbaseType* pValue);
     virtual bool appendValue(const CSECoPbaseType* pValue);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoParray(const CSECoParray* pOther); // special copy constructor for "duplicate"
@@ -2102,7 +2110,7 @@ public:
     virtual CSECoPbaseType* getResult() const;
     virtual bool setArgument(const CSECoPbaseType* pArgument);
     virtual bool setResult(const CSECoPbaseType* pResult);
-    virtual bool importSECoP(const SECoP_json &data, bool bStrict);
+    virtual SECoP_Value_error importSECoP(const SECoP_json &data, bool bStrict);
     virtual SECoP_json exportSECoPjson() const;
 protected:
     CSECoPcommand(const CSECoPcommand* pOther); // special copy constructor for "duplicate"

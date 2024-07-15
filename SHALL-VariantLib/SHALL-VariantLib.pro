@@ -6,7 +6,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
 }
 
 QT     += core
-CONFIG += c++11
+CONFIG += c++17
 TEMPLATE = lib
 
 # this is needed while creation of the library only, do not use inside your project

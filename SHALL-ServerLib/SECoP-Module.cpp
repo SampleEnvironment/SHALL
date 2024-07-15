@@ -676,6 +676,24 @@ enum SECoP_S_error SECoP_S_Module::changeParameter(SECoP_S_Parameter* pParameter
         return SECoP_S_ERROR_INVALID_PARAMETER;
     if (!pParameter->isWritable())
         return SECoP_S_ERROR_READONLY;
+
+
+    //TODO: pre change checks go here:
+    // min max int , double ,scaled???
+    // array min max violated??
+    // string max string lenght violated?
+
+    //double min = 0;
+    //double max = 0;
+    //double val =0 ;
+
+    //SECoP_V_getMinMaxDouble(pValue.get(),0,&min,&max);
+
+    //SECoP_V_getDouble(pValue.get(), 0,0, &val);
+
+   // if (val > max)
+    //    return SECoP_S_ERROR_OUT_OF_RANGE;
+
     // check node configuration
     if (!SECoP_S_Main::hasFunctionPointers())
     {

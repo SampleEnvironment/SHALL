@@ -279,7 +279,7 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
 static void SECoP_S_initLibraryThread(void)
 {
     g_iArgc = 1;
-    g_aszArgv[0] = g_szArgv0 = _strdup("dummy");
+    g_aszArgv[0] = g_szArgv0 = strdup("dummy");
     g_aszArgv[1] = nullptr;
     QApplication app(g_iArgc, g_aszArgv);
     g_pApplication = &app;
@@ -486,7 +486,7 @@ SECoP_S_Main::~SECoP_S_Main()
     QThread* pMySelfThread(QThread::currentThread());
     for (auto it = m_apNodes.begin(); it != m_apNodes.end(); ++it)
     {
-        SECoP_S_Node* pNode(*it);        
+        SECoP_S_Node* pNode(*it);
         SECoP_S_Node* last_Node = nullptr;
 
         QString ContextID = pNode->getContextID();
@@ -2008,7 +2008,7 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
         {
             CSECoPbaseType* pHint(entry.m_pParameter->value().get());
             pValue = SECoP_dataPtr(pHint->duplicate());
-            if (!pValue->importSECoP(szValue.constData(), true))
+            if ( NoError != pValue->importSECoP(szValue.constData(), true))
             {
                 *piResult = SECoP_S_ERROR_INVALID_VALUE;
                 return;
@@ -2016,7 +2016,7 @@ void SECoP_S_Main::putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCo
             if (!szSigma.isEmpty())
             {
                 pSigma = SECoP_dataPtr(pHint->duplicate());
-                if (!pSigma->importSECoP(szSigma.constData(), true))
+                if (NoError != pSigma->importSECoP(szSigma.constData(), true))
                 {
                     *piResult = SECoP_S_ERROR_INVALID_VALUE;
                     return;

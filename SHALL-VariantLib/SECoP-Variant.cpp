@@ -1,4 +1,4 @@
-/*
+﻿/*
 SPDX-License-Identifier: LGPL-3.0-or-later
 Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie GmbH <https://www.helmholtz-berlin.de>
 */
@@ -2310,7 +2310,7 @@ bool CSECoPbaseType::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPbaseType::importSECoP(const char* szValue, bool bStrict)
+SECoP_Value_error CSECoPbaseType::importSECoP(const char* szValue, bool bStrict)
 {
     const void* pMeMyselfAndI(reinterpret_cast<const void*>(this));
     if (pMeMyselfAndI != nullptr && SECoP_V_g_huItems.contains(this))
@@ -2322,15 +2322,15 @@ bool CSECoPbaseType::importSECoP(const char* szValue, bool bStrict)
         }
         catch (nlohmann::detail::exception&)
         {
-            return false;
+            return BadValue;
         }
         catch (...)
         {
-            return false;
+            return BadValue;
         }
         return importSECoP(j, bStrict);
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -2340,11 +2340,11 @@ bool CSECoPbaseType::importSECoP(const char* szValue, bool bStrict)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPbaseType::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPbaseType::importSECoP(const SECoP_json &data, bool bStrict)
 {
     Q_UNUSED(data);
     Q_UNUSED(bStrict);
-    return false;
+    return NoError;
 }
 
 /**
@@ -2396,7 +2396,7 @@ try_again:
     }
     if (pValue == nullptr)
         return nullptr;
-    if (!pValue->importSECoP(data, false))
+    if (NoError != pValue->importSECoP(data, false))
     {
         delete pValue;
         pValue = nullptr;
@@ -2692,10 +2692,13 @@ bool CSECoPnull::clear()
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPnull::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPnull::importSECoP(const SECoP_json &data, bool bStrict)
 {
     Q_UNUSED(bStrict);
-    return data.is_null();
+    if (data.is_null())
+        return NoError;
+
+    return BadValue;
 }
 
 /**
@@ -2822,25 +2825,25 @@ template <typename T> bool CSECoPsimpleType<T>::setValue(const T value)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-template <typename T> bool CSECoPsimpleType<T>::importSECoP(const SECoP_json &data, bool bStrict)
+template <typename T> SECoP_Value_error CSECoPsimpleType<T>::importSECoP(const SECoP_json &data, bool bStrict)
 {
     Q_UNUSED(bStrict);
     if (data.is_null())
-        return true;
+        return NoError;
     if (data.is_number())
     {
         if (data.is_number_unsigned())
         {
             m_value = static_cast<T>(data.get<std::uint64_t>());
-            return true;
+            return NoError;
         }
         if (data.is_number_integer())
         {
             m_value = static_cast<T>(data.get<std::int64_t>());
-            return true;
+            return NoError;
         }
         m_value = static_cast<T>(data.get<double>());
-        return true;
+        return NoError;
     }
     if (data.is_string())
     {
@@ -2852,21 +2855,21 @@ template <typename T> bool CSECoPsimpleType<T>::importSECoP(const SECoP_json &da
                 sValue.compare("+inf", Qt::CaseInsensitive) == 0)
             {
                 m_value = std::numeric_limits<T>::infinity();
-                return true;
+                return NoError;
             }
             if (sValue.compare("-inf", Qt::CaseInsensitive) == 0)
             {
                 m_value = -std::numeric_limits<T>::infinity();
-                return true;
+                return NoError;
             }
         }
         if (std::numeric_limits<T>::has_quiet_NaN && sValue.compare("nan", Qt::CaseInsensitive) == 0)
         {
             m_value = std::numeric_limits<T>::quiet_NaN();
-            return true;
+            return NoError;
         }
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -4140,21 +4143,21 @@ bool CSECoPsimpleBool::createSECoPHelper(SECoP_json &json, QStringList &aszDelKe
  * \param[in] bStrict true: be strict, false: relax parsing (allow numbers and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleBool::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPsimpleBool::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (data.is_boolean())
     {
         m_value = static_cast<long long>(data.get<bool>() ? 1 : 0);
-        return true;
+        return NoError;
     }
     if (!bStrict)
     {
         if (!data.is_number())
         {
             m_value = static_cast<long long>(fabs(data.get<double>()) > 0.0);
-            return true;
+            return NoError;
         }
         if (data.is_string())
         {
@@ -4166,7 +4169,7 @@ bool CSECoPsimpleBool::importSECoP(const SECoP_json &data, bool bStrict)
                 sz.compare("off", Qt::CaseInsensitive) == 0)
             {
                 m_value = 0LL;
-                return true;
+                return NoError;
             }
             if (sz.compare("t", Qt::CaseInsensitive) == 0 ||
                 sz.compare("y", Qt::CaseInsensitive) == 0 ||
@@ -4175,11 +4178,11 @@ bool CSECoPsimpleBool::importSECoP(const SECoP_json &data, bool bStrict)
                 sz.compare("on", Qt::CaseInsensitive) == 0)
             {
                 m_value = 1LL;
-                return true;
+                return NoError;
             }
         }
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -4371,36 +4374,38 @@ bool CSECoParrayBool::createSECoPHelper(SECoP_json &json, QStringList &aszDelKey
  * \param[in] bStrict true: be strict, false: relax parsing (allow numbers and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayBool::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoParrayBool::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     CSECoPsimpleBool value;
     if (data.is_array())
     {
         unsigned int uSize(static_cast<unsigned int>(data.size()));
         if (!setSize(uSize))
-            return false;
+            return RangeError;
         for (unsigned int i = 0; i < uSize; ++i)
         {
             value.setValue(m_pData[i]);
-            if (!value.importSECoP(data[i], bStrict))
-                return false;
+            if (NoError != value.importSECoP(data[i], bStrict))
+                return BadValue;
             if (!value.getValue(m_pData[i]))
-                return false;
+                return BadValue;
         }
-        return true;
+        return NoError;
     }
     if (!bStrict)
     {
         if (!setSize(1))
-            return false;
+            return RangeError;
         value.setValue(m_pData[0]);
-        if (!value.importSECoP(data, bStrict))
-            return false;
-        return value.getValue(m_pData[0]);
+        if (NoError != value.importSECoP(data, bStrict))
+            return BadValue;
+
+        value.getValue(m_pData[0]);
+        return NoError;
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -4511,6 +4516,7 @@ bool CSECoPsimpleDouble::clear()
  */
 bool CSECoPsimpleDouble::setValue(const double dValue)
 {
+
     if (!CSECoPminmaxType<double>::isValid(dValue))
         return false;
     return CSECoPsimpleType<double>::setValue(dValue);
@@ -4533,14 +4539,14 @@ bool CSECoPsimpleDouble::createSECoPHelper(SECoP_json &json, QStringList &aszDel
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleDouble::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPsimpleDouble::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (data.is_number())
     {
         m_value = data.get<double>();
-        return true;
+        goto range_check;
     }
     if (data.is_string())
     {
@@ -4548,17 +4554,17 @@ bool CSECoPsimpleDouble::importSECoP(const SECoP_json &data, bool bStrict)
         if (QRegExp("\\s*[+-]?nan\\s*", Qt::CaseInsensitive).exactMatch(sz))
         {
             m_value = std::numeric_limits<double>::quiet_NaN();
-            return true;
+            goto range_check;
         }
         if (QRegExp("\\s*\\+?inf(inity)\\s*?", Qt::CaseInsensitive).exactMatch(sz))
         {
             m_value = std::numeric_limits<double>::infinity();
-            return true;
+            goto range_check;
         }
         if (QRegExp("\\s*-inf(inity)?\\s*", Qt::CaseInsensitive).exactMatch(sz))
         {
             m_value = -std::numeric_limits<double>::infinity();
-            return true;
+            goto range_check;
         }
     }
     if (!bStrict)
@@ -4566,7 +4572,7 @@ bool CSECoPsimpleDouble::importSECoP(const SECoP_json &data, bool bStrict)
         if (data.is_boolean())
         {
             m_value = data.get<bool>() ? 1.0 : 0.0;
-            return true;
+            goto range_check;
         }
         if (data.is_string())
         {
@@ -4579,16 +4585,21 @@ bool CSECoPsimpleDouble::importSECoP(const SECoP_json &data, bool bStrict)
             if (pEnd != nullptr && *pEnd == '\0')
             {
                 m_value = d;
-                return true;
+                return NoError;
             }
         }
     }
-    return false;
+    return BadValue;
+
+range_check:
+    if (!CSECoPminmaxType<double>::isValid(m_value))
+        return RangeError;
+
+    return NoError;
 }
 
 /**
- * \brief This overloaded helper function returns the SECoP data information of this object.
- * \param[out] json   type plus standard and additional information
+ * \brief This overloaded helper function returns the SECoeformation
  * \param[in]  bArray flag, if this is an array type or not
  * \return true: successful, false: not successful
  */
@@ -4757,36 +4768,38 @@ bool CSECoParrayDouble::createSECoPHelper(SECoP_json &json, QStringList &aszDelK
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayDouble::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoParrayDouble::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     CSECoPsimpleDouble value;
+    //TODO: set min max according to values in Propertys
     if (data.is_array())
     {
         unsigned int uSize(static_cast<unsigned int>(data.size()));
         if (!setSize(uSize))
-            return false;
+            return RangeError;
         for (unsigned int i = 0; i < uSize; ++i)
         {
             value.setValue(m_pData[i]);
-            if (!value.importSECoP(data[i], bStrict))
-                return false;
+            if (NoError != value.importSECoP(data[i], bStrict))
+                return BadValue;
             if (!value.getValue(m_pData[i]))
-                return false;
+                return BadValue;
         }
-        return true;
+        return NoError;
     }
     if (!bStrict)
     {
         if (!setSize(1))
-            return false;
+            return RangeError;
         value.setValue(m_pData[0]);
-        if (!value.importSECoP(data, bStrict))
-            return false;
-        return value.getValue(m_pData[0]);
+        if (NoError != value.importSECoP(data, bStrict))
+            return BadValue;
+        value.getValue(m_pData[0]);
+        return NoError;
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -4920,26 +4933,26 @@ bool CSECoPsimpleInt::createSECoPHelper(SECoP_json &json, QStringList &aszDelKey
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleInt::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPsimpleInt::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (data.is_number_integer())
     {
         m_value = static_cast<long long>(data.get<std::int64_t>());
-        return true;
+        goto range_check;
     }
     if (!bStrict)
     {
         if (data.is_number())
         {
             m_value = static_cast<long long>(fabs(data.get<double>() + 0.5));
-            return true;
+            goto range_check;
         }
         if (data.is_boolean())
         {
             m_value = data.get<bool>() ? 1 : 0;
-            return true;
+            goto range_check;
         }
         if (data.is_string())
         {
@@ -4955,11 +4968,17 @@ bool CSECoPsimpleInt::importSECoP(const SECoP_json &data, bool bStrict)
             if (pEnd != nullptr && *pEnd == '\0')
             {
                 m_value = llValue;
-                return true;
+                goto range_check;
             }
         }
     }
-    return false;
+    return BadValue;
+
+
+range_check:
+    if (!CSECoPminmaxType<long long>::isValid(m_value))
+        return RangeError;
+    return NoError;
 }
 
 /**
@@ -5117,36 +5136,38 @@ bool CSECoParrayInt::appendValue(const CSECoPsimpleInt &value)
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayInt::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoParrayInt::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
+    // TODO add min max limits
     CSECoPsimpleInt value;
     if (data.is_array())
     {
         unsigned int uSize(static_cast<unsigned int>(data.size()));
         if (!setSize(uSize))
-            return false;
+            return RangeError;
         for (unsigned int i = 0; i < uSize; ++i)
         {
             value.setValue(m_pData[i]);
-            if (!value.importSECoP(data[i], bStrict))
-                return false;
+            if (NoError != value.importSECoP(data[i], bStrict))
+                return BadValue;
             if (!value.getValue(m_pData[i]))
-                return false;
+                return BadValue;
         }
-        return true;
+        return NoError;
     }
     if (!bStrict)
     {
         if (!setSize(1))
-            return false;
+            return RangeError;
         value.setValue(m_pData[0]);
-        if (!value.importSECoP(data, bStrict))
-            return false;
-        return value.getValue(m_pData[0]);
+        if (NoError != value.importSECoP(data, bStrict))
+            return BadValue;
+        value.getValue(m_pData[0]);
+        return NoError;
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -5398,7 +5419,7 @@ bool CSECoPsimpleScaled::createSECoPHelper(SECoP_json &json, QStringList &aszDel
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleScaled::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPsimpleScaled::importSECoP(const SECoP_json &data, bool bStrict)
 {
     return CSECoPsimpleInt::importSECoP(data, bStrict);
 }
@@ -5726,7 +5747,7 @@ bool CSECoParrayScaled::createSECoPHelper(SECoP_json &json, QStringList &aszDelK
  * \param[in] bStrict true: be strict, false: relax parsing (boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayScaled::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoParrayScaled::importSECoP(const SECoP_json &data, bool bStrict)
 {
     return CSECoParrayInt::importSECoP(data, bStrict);
 }
@@ -5894,22 +5915,28 @@ bool CSECoPsimpleEnum::createSECoPHelper(SECoP_json &json, QStringList &aszDelKe
  * \param[in] bStrict true: be strict, false: relax parsing (numbers, boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoPsimpleEnum::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPsimpleEnum::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
-    if (!CSECoPsimpleInt::importSECoP(data, bStrict))
-        return false;
+        return NoError;
+    if (NoError != CSECoPsimpleInt::importSECoP(data, bStrict))
+        return BadValue;
     if (bStrict)
-        return CSECoPenumBase::isValid(m_value);
+    {
+        if (CSECoPenumBase::isValid(m_value))
+            return NoError ;
+        else
+            return BadValue;
+    }
     else if (data.is_string())
     {
         QString sValue(QString::fromStdString(data.get<std::string>()));
         for (auto it = m_aItems.constBegin(); it != m_aItems.constEnd(); ++it)
             if (sValue.compare(it->szName, Qt::CaseInsensitive) == 0)
-                return setValue(it->llValue);
+                if(setValue(it->llValue))
+                    return NoError;
     }
-    return false;
+    return BadValue;
 }
 
 /**
@@ -6163,31 +6190,31 @@ bool CSECoParrayEnum::createSECoPHelper(SECoP_json &json, QStringList &aszDelKey
  * \param[in] bStrict true: be strict, false: relax parsing (numbers, boolean and some strings)
  * \return true: successful, false: not successful
  */
-bool CSECoParrayEnum::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoParrayEnum::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     CSECoPsimpleEnum value;
     value.m_aItems = m_aItems;
     if (data.is_array())
     {
         unsigned int uSize(static_cast<unsigned int>(data.size()));
         if (!setSize(uSize))
-            return false;
+            return RangeError;
         for (unsigned int i = 0; i < uSize; ++i)
         {
             value.setValue(m_pData[i]);
-            if (!value.importSECoP(data[i], bStrict))
-                return false;
+            if (NoError != value.importSECoP(data[i], bStrict))
+                return BadValue;
             if (!value.getValue(m_pData[i]))
-                return false;
+                return BadValue;
         }
-        return true;
+        return NoError;
     }
     if (!bStrict)
-        if (value.importSECoP(data, false) && setSize(1) && value.getValue(m_pData[0]))
-            return true;
-    return false;
+        if (NoError != value.importSECoP(data, false) && setSize(1) && value.getValue(m_pData[0]))
+            return NoError;
+    return BadValue;
 }
 
 /**
@@ -6456,15 +6483,21 @@ bool CSECoPstring::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPstring::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPstring::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (data.is_string())
-        return setValue(QByteArray::fromStdString(data.get<std::string>()));
+    {
+        if (setValue(QByteArray::fromStdString(data.get<std::string>())))
+            return NoError;
+        else
+            return BadValue;
+    }
     if (!bStrict)
-        return setValue(QByteArray::fromStdString(data.dump(-1, ' ', false, SECoP_json::error_handler_t::replace)));
-    return false;
+        if(setValue(QByteArray::fromStdString(data.dump(-1, ' ', false, SECoP_json::error_handler_t::replace))))
+            return NoError;
+    return BadValue;
 }
 
 /**
@@ -6843,12 +6876,12 @@ bool CSECoPstruct::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
  * \param[in] bStrict true: be strict, false: relax parsing (allow missing parts, imports unknown keys)
  * \return true: successful, false: not successful
  */
-bool CSECoPstruct::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPstruct::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (!data.is_object())
-        return false;
+        return BadValue;
     if (bStrict)
     {
         for (auto &it : data.items())
@@ -6864,7 +6897,7 @@ bool CSECoPstruct::importSECoP(const SECoP_json &data, bool bStrict)
                 }
             }
             if (!bFound)
-                return false;
+                return BadValue;
         }
         for (auto it = m_asNames.constBegin(); it != m_asNames.constEnd(); ++it)
         {
@@ -6879,7 +6912,7 @@ bool CSECoPstruct::importSECoP(const SECoP_json &data, bool bStrict)
                 }
             }
             if (!bFound)
-                return false;
+                return BadValue;
         }
     }
     QVector<bool> abTouched;
@@ -6894,27 +6927,27 @@ bool CSECoPstruct::importSECoP(const SECoP_json &data, bool bStrict)
         if (iIndex < 0)
         {
             if (bStrict)
-                return false;
+                return BadValue;
             CSECoPbaseType* pItem(CSECoPbaseType::importSECoP(it.value()));
             if (pItem == nullptr)
-                return false;
+                return BadValue;
             m_asNames.append(szKey.toUtf8());
             m_apItems.append(pItem);
             abTouched.append(true);
             continue;
         }
         if (abTouched[iIndex])
-            return false;
+            return BadValue;
         abTouched[iIndex] = true;
         const SECoP_json &v(it.value());
         if (v.is_null())
             continue;
         if (m_apItems[iIndex] == nullptr)
-            return false;
-        if (!m_apItems[iIndex]->importSECoP(v, bStrict))
-            return false;
+            return BadValue;
+        if (NoError != m_apItems[iIndex]->importSECoP(v, bStrict))
+            return BadValue;
     }
-    return true;
+    return NoError;
 }
 
 /**
@@ -7239,16 +7272,16 @@ bool CSECoPtuple::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPtuple::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPtuple::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (!data.is_array())
-        return false;
+        return BadValue;
     if (bStrict)
     {
         if (data.size() != static_cast<unsigned int>(m_apItems.size()))
-            return false;
+            return BadValue;
     }
     else
     {
@@ -7259,7 +7292,7 @@ bool CSECoPtuple::importSECoP(const SECoP_json &data, bool bStrict)
                 break;
             CSECoPbaseType* pItem(CSECoPbaseType::importSECoP(data[i]));
             if (pItem == nullptr)
-                return false;
+                return BadValue;
             m_apItems.append(pItem);
         }
     }
@@ -7269,11 +7302,11 @@ bool CSECoPtuple::importSECoP(const SECoP_json &data, bool bStrict)
         if (v.is_null())
             continue;
         if (m_apItems[static_cast<int>(i)] == nullptr)
-            return false;
-        if (!m_apItems[static_cast<int>(i)]->importSECoP(v, bStrict))
-            return false;
+            return BadValue;
+        if (NoError != m_apItems[static_cast<int>(i)]->importSECoP(v, bStrict))
+            return BadValue;
     }
-    return true;
+    return NoError;
 }
 
 /**
@@ -7716,15 +7749,15 @@ bool CSECoParray::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoParray::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoParray::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (data.is_null() && !bStrict)
-        return true;
+        return NoError;
     if (!data.is_array() || m_pType == nullptr)
-        return false;
+        return BadValue;
     unsigned int uSize(static_cast<unsigned int>(data.size()));
     if (!setSize(uSize))
-        return false;
+        return RangeError;
     for (int i = 0; i < static_cast<int>(data.size()); ++i)
     {
         const SECoP_json &v(data[static_cast<unsigned int>(i)]);
@@ -7734,12 +7767,12 @@ bool CSECoParray::importSECoP(const SECoP_json &data, bool bStrict)
         {
             m_apItems[i] = m_pType->duplicate();
             if (m_apItems[i] == nullptr)
-                return false;
+                return BadValue;
         }
-        if (!m_apItems[i]->importSECoP(v, bStrict))
-            return false;
+        if (NoError != m_apItems[i]->importSECoP(v, bStrict))
+            return BadValue;
     }
-    return true;
+    return NoError;
 }
 
 /**
@@ -8013,11 +8046,15 @@ bool CSECoPcommand::createSECoPHelper(SECoP_json &json, QStringList &aszDelKeys)
  * \param[in] bStrict true: be strict, false: relax parsing
  * \return true: successful, false: not successful
  */
-bool CSECoPcommand::importSECoP(const SECoP_json &data, bool bStrict)
+SECoP_Value_error CSECoPcommand::importSECoP(const SECoP_json &data, bool bStrict)
 {
     if (m_pArgument != nullptr)
         return m_pArgument->importSECoP(data, bStrict);
-    return data.is_null();
+
+    if (data.is_null())
+        return NoError;
+
+    return BadValue;
 }
 
 /**

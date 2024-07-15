@@ -5,7 +5,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("need Qt 5.x or higher with C++11 support")
 }
 
-CONFIG   +=c++11
+CONFIG   +=c++17
 QT       += network core gui widgets
 
 TARGET = SHALLclient
