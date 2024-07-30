@@ -21,6 +21,10 @@
 #include <QWidget>
 #include <QList>
 #include <QMap>
+#include <QTcpSocket>
+#include <QHostAddress>
+#include <iostream>
+#include  "test_node.h"
 
 #define CONTEXT_ID "default"
 #define CONTEXT_ID_N2 "default_node2"
@@ -37,200 +41,7 @@ void noMessageOutput(QtMsgType, const QMessageLogContext &, const QString &)
 
 
 
-void Local_GetTemperature(const char* name, enum SECoP_S_error* piError, CSECoPbaseType** ppData, CSECoPbaseType** ppSigma, double* timestamp)
-{
-    Q_UNUSED(name);
-    Q_UNUSED(piError);
-    Q_UNUSED(timestamp);
-    *ppSigma = SECoP_V_create("{\"type\":\"double\"}");
 
-    double randomDouble = QRandomGenerator::global()->generateDouble();
-
-    SECoP_V_modifyDouble(*ppData, 0, 0, randomDouble);
-    SECoP_V_modifyDouble(*ppSigma, 0, 0, 0.01); // fixed error value
-}
-
-
-void Local_GetTarget(const char* name, enum SECoP_S_error* piError, CSECoPbaseType** ppData, CSECoPbaseType** ppSigma, double* timestamp)
-{
-    Q_UNUSED(name);
-    Q_UNUSED(piError);
-    Q_UNUSED(ppSigma);
-    Q_UNUSED(timestamp);
-
-    SECoP_V_modifyDouble(*ppData, 0, 0, 20);
-
-}
-
-void Local_SetTarget(const char* name, enum SECoP_S_error* piError, CSECoPbaseType** ppData, CSECoPbaseType** ppSigma, double* timestamp)
-{
-    Q_UNUSED(name);
-    Q_UNUSED(ppSigma);
-    Q_UNUSED(timestamp);
-    printf("settarget\n");
-    fflush(stdout);
-
-    double dblTarget(std::numeric_limits<double>::quiet_NaN());
-
-    if (SECoP_V_getDouble(*ppData, 0, 0, &dblTarget))
-    {
-        if (dblTarget < -273.15)
-            dblTarget = -273.15;
-        else if (dblTarget > 1000.0)
-            dblTarget = 1000.0;
-        SECoP_V_modifyDouble(*ppData, 0, 0, dblTarget);
-    }
-    else
-        *piError = SECoP_S_ERROR_INVALID_VALUE;
-
-}
-
-
-void Local_GetStatus(const char* name, enum SECoP_S_error* piError, CSECoPbaseType** ppData, CSECoPbaseType** ppSigma, double* timestamp)
-{
-    Q_UNUSED(name);
-    Q_UNUSED(piError);
-    Q_UNUSED(ppSigma);
-    Q_UNUSED(timestamp);
-
-    QString szStatus("IDLE");
-    qint64 i(0);
-    if (szStatus.contains(QString("idle"), Qt::CaseInsensitive))
-    {
-        szStatus.clear();
-        //Counting flowers on the wall, that don't bother me at all Playing solitaire til dawn with a deck of fiftyone Smoking cigarettes and watching Captain Kangaroo Now don't tell me I've
-        szStatus.append("IDLE Counting flowers on the wall, that don't bother me at all Playing solitaire til dawn with a deck of fiftyone Smoking cigarettes and watching Captain Kangaroo Now don't tell me I've nothing to do");
-        i |= 0x01;
-    }
-    if (szStatus.contains(QString("pause"), Qt::CaseInsensitive))
-        i |= 0x02;
-    if (szStatus.contains(QString("start"), Qt::CaseInsensitive))
-        i |= 0x04;
-    if (szStatus.contains(QString("stop"), Qt::CaseInsensitive))
-        i |= 0x08;
-    if (szStatus.contains(QString("reset"), Qt::CaseInsensitive))
-        i |= 0x10;
-    if (szStatus.contains(QString("shutdown"), Qt::CaseInsensitive))
-        i |= 0x20;
-    if (szStatus.contains(QString("finish"), Qt::CaseInsensitive))
-        i |= 0x40;
-    switch (i) // only one word should found to map a status
-    {
-    case 0x01: i = 100; break;
-    case 0x02: i = 101; break;
-    case 0x04: i = 300; break;
-    case 0x08: i = 200; break;
-    case 0x10: i = 400; break;
-    case 0x20: i = 400; break;
-    case 0x40: i = 100; break;
-    default: i = -1; break; // unknown, if less or more words are found
-    }
-    SECoP_V_modifyInteger(*ppData, 1, 0, i);
-    SECoP_V_modifyString(*ppData, 2, qUtf8Printable(szStatus), -1);
-
-
-}
-
-void funcCall(const char* name, const CSECoPbaseType* pArgument, enum SECoP_S_error* piError, CSECoPbaseType** ppReturn, double* timestamp)
-{
-    Q_UNUSED(pArgument);
-    Q_UNUSED(piError);
-    Q_UNUSED(ppReturn);
-    Q_UNUSED(timestamp);
-
-    QString szCommand(name);
-    if (szCommand.endsWith(":stop"))
-    {
-        printf("settarget\n");
-        fflush(stdout);
-    }
-
-}
-
-
-
-
-
-void Node(const char* context_id,const char* Node_id,unsigned short port,int sleep_time){
-
-    SECoP_S_initLibrary(nullptr, true, true,context_id);
-
-    SECoP_S_setManyThreads(0);
-
-    SECoP_S_createNode(Node_id, "TestNode", port,context_id);
-    //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
-    SECoP_S_addModule("hpd",context_id);
-    SECoP_S_addPropertyString("description", "Hotplate drivable",context_id);
-    SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]",context_id);
-    SECoP_S_addPropertyDouble("pollinterval", 10.0,context_id);
-    SECoP_S_addReadableParameter("value", &Local_GetTemperature,context_id);
-    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",context_id);
-    SECoP_S_addPropertyDouble("pollinterval", 1.0,context_id);
-    SECoP_S_addPropertyString("description", "actual temperature",context_id);
-    SECoP_S_addReadableParameter("status", &Local_GetStatus,context_id);
-    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",context_id);
-    SECoP_S_addPropertyString("description", "machine status",context_id);
-    SECoP_S_addPropertyDouble("pollinterval", 1.0,context_id);
-    //          SECoP_S_addReadableParameter2("useramp2", &SECoPModul::getRampBool, SECoPModul::theInstance);
-    SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,context_id);
-    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",context_id);
-    SECoP_S_addPropertyString("description", "target temperature",context_id);
-    SECoP_S_addCommand("stop",&funcCall,context_id);
-    SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",context_id);
-    SECoP_S_nodeComplete(context_id);
-
-    SECoP_S_showStatusWindow(true);
-
-
-
-
-
-    QThread::sleep(sleep_time);
-
-
-    SECoP_S_doneLibrary(true,context_id);
-
-
-    QThread::sleep(2);
-}
-
-
-
-void Node_no_wait(const char* context_id,const char* Node_id,unsigned short port){
-
-    SECoP_S_initLibrary(nullptr, true, true,context_id);
-
-
-    SECoP_S_setManyThreads(0);
-
-    SECoP_S_createNode(Node_id, "TestNode", port,context_id);
-    //      SECoP_S_addPropertyJSON("order","[\"hpdtest\"]");
-    SECoP_S_addModule("hpd",context_id);
-    SECoP_S_addPropertyString("description", "Hotplate drivable",context_id);
-    SECoP_S_addPropertyJSON("interface_classes", "[\"Drivable\",\"Writable\",\"Readable\"]",context_id);
-    SECoP_S_addPropertyDouble("pollinterval", 10.0,context_id);
-    SECoP_S_addReadableParameter("value", &Local_GetTemperature,context_id);
-    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",context_id);
-    SECoP_S_addPropertyDouble("pollinterval", 1.0,context_id);
-    SECoP_S_addPropertyString("description", "actual temperature",context_id);
-    SECoP_S_addReadableParameter("status", &Local_GetStatus,context_id);
-    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"tuple\",\"members\":[{\"type\":\"enum\",\"members\":{\"IDLE\":100,\"WARN\":200,\"BUSY\":300,\"BUSY_Stabilizing\":380,\"ERROR\":400,\"DISABLED\":0}},{\"type\":\"string\"}]}",context_id);
-    SECoP_S_addPropertyString("description", "machine status",context_id);
-    SECoP_S_addPropertyDouble("pollinterval", 1.0,context_id);
-    //          SECoP_S_addReadableParameter2("useramp2", &SECoPModul::getRampBool, SECoPModul::theInstance);
-    SECoP_S_addWritableParameter("target", &Local_GetTarget, &Local_SetTarget,context_id);
-    SECoP_S_addPropertyJSON("datainfo", "{\"type\":\"double\",\"unit\":\"K\"}",context_id);
-    SECoP_S_addPropertyString("description", "target temperature",context_id);
-    SECoP_S_addCommand("stop",&funcCall,context_id);
-    SECoP_S_addPropertyString("description", "stops and settings are not stored no resume",context_id);
-    SECoP_S_nodeComplete(context_id);
-
-    SECoP_S_showStatusWindow(true);
-
-
-
-
-}
 
 
 
@@ -291,6 +102,107 @@ protected:
 };
 
 
+TEST_F(Context_id_Test, GetCommad) {
+
+
+    const char* context_id_1 = "id1";
+    const char* context_id_2 = "id2";
+
+
+    const char* node1 = "node1";
+    const char* node2 = "node2";
+
+    unsigned int port1 = 2055;
+    unsigned int port2 = 2056;
+
+    Node_no_wait( context_id_1, node1, port1,false);
+
+
+    Node_no_wait(context_id_2, node2, port2,false);
+
+    QTcpSocket socket55;
+    QTcpSocket socket56;
+
+    socket56.connectToHost(QHostAddress("127.0.0.1"), 2056); // Change IP and port as needed
+
+    socket55.connectToHost(QHostAddress("127.0.0.1"), 2055); // Change IP and port as needed
+
+    ASSERT_TRUE(socket55.waitForConnected(3000));
+    ASSERT_TRUE(socket56.waitForConnected(3000));
+
+    QByteArray command = "change hpd:target 500\n";
+
+    // command to id2 is sent first
+    socket56.write(command);
+    socket55.write(command);
+
+
+    ASSERT_TRUE(socket55.waitForBytesWritten(3000));
+    ASSERT_TRUE(socket56.waitForBytesWritten(3000));
+
+
+    unsigned long long pllId = 10;
+    enum SECoP_S_action  Action = SECoP_S_ACTION_NONE ;
+    char* szParameter = (char*) malloc(40);
+    int piParameterSize = 40;
+
+    CSECoPbaseType * ppValue = SECoP_V_fromJSON("{\"type\":\"double\",\"unit\":\"K\"}",nullptr);
+
+
+
+    //### ContextID: id1 --> Node1
+    while (Action != SECoP_S_ACTION_CHANGE) {
+        pllId = 10;
+        Action = SECoP_S_ACTION_NONE ;
+        piParameterSize = 40;
+        SECoP_S_getStoredCommand(&pllId,&Action,szParameter,&piParameterSize,&ppValue,context_id_1);
+    }
+
+    QString corr_string = QString("node1:hpd:target");
+
+    ASSERT_TRUE(corr_string == szParameter);
+
+    SECoP_S_putCommandAnswer(pllId,SECoP_S_error(NoError),ppValue,nullptr,0);
+
+    socket55.waitForReadyRead(3000);
+
+    QByteArray response = socket55.readAll();
+
+
+
+    Action = SECoP_S_ACTION_NONE ;
+    //### ContextID: id2 --> Node2
+    while (Action != SECoP_S_ACTION_CHANGE) {
+        pllId = 10;
+        Action = SECoP_S_ACTION_NONE ;
+        piParameterSize = 40;
+        SECoP_S_getStoredCommand(&pllId,&Action,szParameter,&piParameterSize,&ppValue,context_id_2);
+    }
+
+    corr_string = QString("node2:hpd:target");
+
+    ASSERT_TRUE(corr_string == szParameter);
+
+
+    SECoP_S_putCommandAnswer(pllId,SECoP_S_error(NoError),ppValue,nullptr,0);
+
+    socket55.waitForReadyRead(3000);
+
+    response = socket55.readAll();
+
+
+    socket55.disconnectFromHost();
+    socket56.disconnectFromHost();
+
+
+
+    SECoP_S_showStatusWindow(true);
+
+    QThread::sleep(5);
+
+
+}
+
 
 
 // void context_testing::initTestCase(){
@@ -312,10 +224,10 @@ TEST_F(Context_id_Test, delete_node) {
     unsigned int port2 = 2058;
 
 
-    Node_no_wait( context_id_1, node1, port1);
+    Node_no_wait( context_id_1, node1, port1,true);
 
 
-    Node_no_wait(context_id_2, node2, port2);
+    Node_no_wait(context_id_2, node2, port2,true);
 
 
     // both nodes initialized
@@ -350,11 +262,11 @@ TEST_F(Context_id_Test, gui_state) {
     unsigned int port2 = 2058;
 
 
-    Node_no_wait( context_id_1, node1, port1);
+    Node_no_wait( context_id_1, node1, port1,true);
 
     ASSERT_TRUE(Context_id_Test::gui_is_Visible());
 
-    Node_no_wait(context_id_2, node2, port2);
+    Node_no_wait(context_id_2, node2, port2,true);
 
     ASSERT_TRUE(Context_id_Test::gui_is_Visible());
 
@@ -362,7 +274,7 @@ TEST_F(Context_id_Test, gui_state) {
 
     ASSERT_TRUE(Context_id_Test::gui_is_Visible());
 
-    Node_no_wait(context_id_2, node2, port2);
+    Node_no_wait(context_id_2, node2, port2,true);
 
     //delete Nodea
     SECoP_S_deleteNode(node1);
@@ -423,6 +335,8 @@ TEST_F(Context_id_Test, concurrent) {
 
 
 }
+
+
 
 
 

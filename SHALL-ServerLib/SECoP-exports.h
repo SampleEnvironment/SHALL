@@ -263,7 +263,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter2(const char* szParameter
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
-                                                             char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue, char* szContextID);
+                                                             char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue,const char* szContextID);
 
 /**
  * \brief When polling is enabled (\ref SECoP_S_createNode) call SECoP_S_getStoredCommand2
@@ -283,7 +283,7 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pll
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand2(unsigned long long* pllId, enum SECoP_S_action *piAction,
                                                           char* szParameter, int* piParameterSize, char* szValue,
-                                                          int* piValueSize, char* szContextID);
+                                                          int* piValueSize,const char* szContextID);
 
 /**
  * \brief Call SECoP_S_putCommandAnswer, when \ref SECoP_S_getStoredCommand provided

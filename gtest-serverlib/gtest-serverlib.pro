@@ -69,7 +69,9 @@ SOURCES += \
     ../SHALL-ServerLib/SECoP-Worker.cpp \
     ../SHALL-ServerLib/SECoP-StatusGui.cpp \
     main.cpp \
-    tst_contextid.cpp
+    test_node.cpp \
+    tst_contextid.cpp \
+    tst_protocol.cpp
 
 HEADERS       = \
     ../SHALL-ServerLib/SECoP-defines.h \
@@ -83,7 +85,8 @@ HEADERS       = \
     ../SHALL-ServerLib/SECoP-Worker.h \
     ../SHALL-ServerLib/SECoP-types.h \
     ../SHALL-ServerLib/SECoP-StatusGui.h \
-    ../SHALL-VariantLib/SECoP-Variant.h
+    ../SHALL-VariantLib/SECoP-Variant.h \
+    test_node.h
 
 
 FORMS += \

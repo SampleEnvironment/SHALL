@@ -1688,7 +1688,7 @@ void SECoP_S_Main::forgetStoredCommands(QObject* pTarget)
  */
 extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
                                                                     char* szParameter, int* piParameterSize,
-                                                                    CSECoPbaseType** ppValue, char* szContextID)
+                                                                    CSECoPbaseType** ppValue,const char* szContextID)
 {
     SECoP_dataPtr pTmp;
     SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp, szContextID));
@@ -1719,7 +1719,7 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned lon
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 extern "C" enum SECoP_S_error SECoP_S_getStoredCommand2(unsigned long long* pllId, SECoP_S_action* piAction, char* szParameter,
-                                                        int* piParameterSize, char* szValue, int* piValueSize, char* szContextID)
+                                                        int* piParameterSize, char* szValue, int* piValueSize,const char* szContextID)
 {
     SECoP_dataPtr pTmp;
     enum SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp, szContextID));
