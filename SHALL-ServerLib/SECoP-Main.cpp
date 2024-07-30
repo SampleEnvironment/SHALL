@@ -1683,14 +1683,15 @@ void SECoP_S_Main::forgetStoredCommands(QObject* pTarget)
  * \param[out]    szParameter     buffer which gets the parameter/command name
  * \param[in,out] piParameterSize input: maximum buffer size, out: needed buffer size
  * \param[out]    ppValue         on "change": set value and "do": function call argument
+ * \param[in]     szContextID     Context ID that the the retrieved command should belong to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
                                                                     char* szParameter, int* piParameterSize,
-                                                                    CSECoPbaseType** ppValue)
+                                                                    CSECoPbaseType** ppValue, char* szContextID)
 {
     SECoP_dataPtr pTmp;
-    SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp));
+    SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp, szContextID));
     if (ppValue != nullptr)
     {
         if (pTmp == nullptr || pTmp.get() == nullptr)
@@ -1714,13 +1715,14 @@ extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned lon
  * \param[in,out] piParameterSize input: maximum name buffer size, out: needed name buffer size
  * \param[out]    szValue         buffer which gets the set value or command argument as json
  * \param[in,out] piValueSize     input: maximum value buffer size, out: needed value buffer size
+ * \param[in]     szContextID     Context ID that the the retrieved command should belong to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 extern "C" enum SECoP_S_error SECoP_S_getStoredCommand2(unsigned long long* pllId, SECoP_S_action* piAction, char* szParameter,
-                                                        int* piParameterSize, char* szValue, int* piValueSize)
+                                                        int* piParameterSize, char* szValue, int* piValueSize, char* szContextID)
 {
     SECoP_dataPtr pTmp;
-    enum SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp));
+    enum SECoP_S_error iResult(SECoP_S_Main::getStoredCommand(pllId, piAction, szParameter, piParameterSize, &pTmp, szContextID));
     if (iResult >= 0)
     {
         QByteArray szBuffer;
@@ -1750,20 +1752,21 @@ extern "C" enum SECoP_S_error SECoP_S_getStoredCommand2(unsigned long long* pllI
  * \param[out]    szParameter     buffer which gets the parameter/command name
  * \param[in,out] piParameterSize input: maximum buffer size, out: needed buffer size
  * \param[out]    ppValue         on "change": set value, on "do": function call argument
+ * \param[in]     szContextID     Context ID that the the retrieved command should belong to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter,
-                                                  int* piParameterSize, SECoP_dataPtr* ppValue)
+                                                  int* piParameterSize, SECoP_dataPtr* ppValue, QString szContextID)
 {
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     if (g_pSECoPMain == nullptr)
         return SECoP_S_ERROR_NOT_INITIALIZED;
     if (g_pSECoPMain->thread() == QThread::currentThread())
-        g_pSECoPMain->getStoredCommand(pllId, piAction, szParameter, piParameterSize, ppValue, &iResult);
+        g_pSECoPMain->getStoredCommand(pllId, piAction, szParameter, piParameterSize, ppValue, &iResult, szContextID);
     else
         QMetaObject::invokeMethod(g_pSECoPMain, "getStoredCommand", Qt::BlockingQueuedConnection, Q_ARG(qulonglong*, pllId),
                                   Q_ARG(SECoP_S_action*, piAction), Q_ARG(char*, szParameter), Q_ARG(int*, piParameterSize),
-                                  Q_ARG(SECoP_dataPtr*, ppValue), Q_ARG(SECoP_S_error*, &iResult));
+                                  Q_ARG(SECoP_dataPtr*, ppValue), Q_ARG(SECoP_S_error*, &iResult), Q_ARG(QString, szContextID));
     return iResult;
 }
 
@@ -1778,16 +1781,38 @@ enum SECoP_S_error SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_act
  * \param[out]    szParameter     buffer which gets the parameter/command name
  * \param[in,out] piParameterSize input: maximum buffer size, out: needed buffer size
  * \param[out]    ppValue         on "change": set value, on "do" function call argument
+ * \param[in]     szContextID     Context ID that the the retrieved command should belong to
  * \param[out]    piResult        on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
-                                    SECoP_dataPtr *ppValue, SECoP_S_error* piResult)
+                                    SECoP_dataPtr *ppValue, SECoP_S_error* piResult, QString szContextID)
 {
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     QMutexLocker locker(m_pMutex);
+
+    if(!m_ContextIdMap.contains(szContextID)){
+        iResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
+        goto finish;
+
+
+    }
+
+
     if (!m_aStoredCommands.isEmpty())
     {
-        ActionEntry entry(m_aStoredCommands.takeFirst());
+        ActionEntry entry;
+        for (int i = 0; i < m_aStoredCommands.size(); ++i) {
+            ActionEntry list_entry= m_aStoredCommands.at(i);
+            if (list_entry.m_pNode->getContextID() == szContextID){
+                entry = m_aStoredCommands.takeAt(i);
+                break;
+            }
+        }
+        if (entry.m_pNode == nullptr){
+            iResult = SECoP_S_ERROR_NO_DATA;
+            goto finish;
+        }
+
         entry.m_llCreateTime = QDateTime::currentMSecsSinceEpoch(); // update timestamp
         m_aExecutedCommands.append(entry);
         locker.unlock();
@@ -1818,7 +1843,11 @@ void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction,
             *ppValue = nullptr;
     }
     else
+    {
         iResult = SECoP_S_ERROR_NO_DATA;
+    }
+
+finish:
 
     if (piResult != nullptr)
         *piResult = iResult;

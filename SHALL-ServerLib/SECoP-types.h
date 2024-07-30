@@ -110,9 +110,11 @@ enum SECoP_S_error
     /** additional forced SECoP error "InternalError" */
     SECoP_S_ERROR_INTERNAL           = -28,
 
+    /** Parameter is not inside the allowed range" */
+    SECoP_S_ERROR_OUT_OF_RANGE       = -29,
 
     /** Parameter is not inside the allowed range" */
-    SECoP_S_ERROR_OUT_OF_RANGE       = -29
+    SECoP_S_ERROR_INVALID_CONTEXT_ID = -30
 };
 
 /**

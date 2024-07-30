@@ -259,10 +259,11 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_updateParameter2(const char* szParameter
  * \param[out]    szParameter     buffer which gets the parameter/command name
  * \param[in,out] piParameterSize input: maximum buffer size, out: needed buffer size
  * \param[out]    ppValue         on "change": set value, on "do": function call argument
+ * \param[in]     szContextID     Context ID that the the retrieved command should belong to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pllId, enum SECoP_S_action *piAction,
-                                                             char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue);
+                                                             char* szParameter, int* piParameterSize, CSECoPbaseType** ppValue, char* szContextID);
 
 /**
  * \brief When polling is enabled (\ref SECoP_S_createNode) call SECoP_S_getStoredCommand2
@@ -277,11 +278,12 @@ enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand(unsigned long long* pll
  * \param[in,out] piParameterSize input: maximum name buffer size, out: needed name buffer size
  * \param[out]    szValue         buffer which gets the set value or command argument as json
  * \param[in,out] piValueSize     input: maximum value buffer size, out: needed value buffer size
+ * \param[in]     szContextID     Context ID that the the retrieved command should belong to
  * \return on success SECoP_S_SUCCESS or a SECoP_S_error
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_getStoredCommand2(unsigned long long* pllId, enum SECoP_S_action *piAction,
                                                           char* szParameter, int* piParameterSize, char* szValue,
-                                                          int* piValueSize);
+                                                          int* piValueSize, char* szContextID);
 
 /**
  * \brief Call SECoP_S_putCommandAnswer, when \ref SECoP_S_getStoredCommand provided

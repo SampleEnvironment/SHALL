@@ -53,7 +53,7 @@ public:
     static enum SECoP_S_error updateParameter2(QString szParameterName, QByteArray szData, QByteArray szSigma, double dblTimestamp);
     static void forgetStoredCommands(QObject* pTarget);
     static enum SECoP_S_error getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
-                                               SECoP_dataPtr* ppValue);
+                                               SECoP_dataPtr* ppValue, QString szContextID);
     static enum SECoP_S_error putCommandAnswer(qulonglong llId, enum SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
                                                const SECoP_dataPtr pSigma, double dblTimestamp);
     static enum SECoP_S_error putCommandAnswer2(qulonglong llId, enum SECoP_S_error iErrorCode, QByteArray szValue,
@@ -81,7 +81,7 @@ private slots:
     void updateParameter2(QString szParameterName, QByteArray szData, QByteArray szSigma,
                           double dblTimestamp, SECoP_S_error* piResult);
     void getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
-                          SECoP_dataPtr* ppValue, SECoP_S_error* piResult);
+                          SECoP_dataPtr* ppValue, SECoP_S_error* piResult, QString szContextID);
     void putCommandAnswerSlot(qulonglong llId, SECoP_S_error iErrorCode, const SECoP_dataPtr pValue,
                               const SECoP_dataPtr pSigma, double dblTimestamp, SECoP_S_error *piResult);
     void putCommandAnswer2Slot(qulonglong llId, SECoP_S_error iErrorCode, QByteArray szValue, QByteArray szSigma,
