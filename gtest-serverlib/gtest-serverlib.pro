@@ -3,7 +3,7 @@ include(gtest_dependency.pri)
 
 QT       += core gui network widgets concurrent
 TEMPLATE = app
-CONFIG += console c++17
+CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG += thread
 

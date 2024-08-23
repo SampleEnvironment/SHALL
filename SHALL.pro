@@ -4,7 +4,7 @@ TEMPLATE =	subdirs
 CONFIG  +=	ordered
 
 # Export gtest directory path
-GOOGLETEST_DIR = "/home/qfj/git-repos/github/googletest"
+GOOGLETEST_DIR = "D:\shall-repos\googletest"
 export(GOOGLETEST_DIR)
 
 
