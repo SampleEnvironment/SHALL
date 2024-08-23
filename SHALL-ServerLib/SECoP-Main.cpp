@@ -640,11 +640,12 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
             {
                 m_pGui->removeNode(pNode);
                 QMutexLocker locker(m_pMutex);
-                for (int i = 0; i < m_aStoredCommands.size(); ++i)
+
+                QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
+                for (int i = 0; i < pList->size(); ++i)
                 {
-                    ActionEntry& entry = m_aStoredCommands[i];
-                    if (entry.m_pNode == pNode)
-                        m_aStoredCommands.removeAt(i--);
+                    if (pList->at(i).m_pNode == pNode)
+                        pList->removeAt(i--);
                 }
                 for (int i = 0; i < m_aExecutedCommands.size(); ++i)
                 {
@@ -882,6 +883,10 @@ void SECoP_S_Main::createNode(QString szContextID,QString szID, QString szDesc, 
 
         m_ContextIdMap.insert(szContextID,last_node);
 
+        if(!m_aStoredCommands.contains(szContextID)){
+            QList<ActionEntry>* pList = new QList<ActionEntry>();
+            m_aStoredCommands.insert(szContextID, pList);
+        }
 
         if (last_node->isValid())
         {
@@ -955,11 +960,14 @@ void SECoP_S_Main::deleteNode(QString szID, SECoP_S_error* piResult)
     {
         QMutexLocker locker(m_pMutex);
         pNode = m_apNodes.takeAt(iPos);
-        for (int i = 0; i < m_aStoredCommands.size(); ++i)
+
+        QString szContextID = pNode->getContextID();
+        QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
+
+        for (int i = 0; i < pList->size(); ++i)
         {
-            ActionEntry& entry = m_aStoredCommands[i];
-            if (entry.m_pNode == pNode)
-                m_aStoredCommands.removeAt(i--);
+            if (pList->at(i).m_pNode == pNode)
+                pList->removeAt(i--);
         }
         for (int i = 0; i < m_aExecutedCommands.size(); ++i)
         {
@@ -967,7 +975,7 @@ void SECoP_S_Main::deleteNode(QString szID, SECoP_S_error* piResult)
             if (entry.m_pNode == pNode)
                 m_aExecutedCommands.removeAt(i--);
         }
-        QString szContextID = pNode->getContextID();
+
         if (m_ContextIdMap.contains(szContextID) && pNode == m_ContextIdMap.value(szContextID))
             m_ContextIdMap.insert(szContextID, nullptr);
     }
@@ -1635,7 +1643,7 @@ void SECoP_S_Main::storeCommand(quint64 qwRequestId, QObject* pTarget, SECoP_S_N
         if (iAction == SECoP_S_ACTION_READ)
         {
             // check queue for already inserted read requests
-            QList<ActionEntry>* pList = &m_aStoredCommands;
+            QList<ActionEntry>* pList = m_aStoredCommands.value(pNode->getContextID());
             for (int i = 0; i < 2; ++i)
             {
                 for (auto it = pList->constBegin(); it != pList->constEnd(); ++it)
@@ -1648,7 +1656,7 @@ void SECoP_S_Main::storeCommand(quint64 qwRequestId, QObject* pTarget, SECoP_S_N
                 pList = &m_aExecutedCommands;
             }
         }
-        m_aStoredCommands.append(entry);
+        m_aStoredCommands.value(pNode->getContextID())->append(entry);
     }
 }
 
@@ -1662,9 +1670,12 @@ void SECoP_S_Main::forgetStoredCommands(QObject* pTarget)
     if (g_pSECoPMain != nullptr)
     {
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
-        for (int i = 0; i < g_pSECoPMain->m_aStoredCommands.size(); ++i)
-            if (g_pSECoPMain->m_aStoredCommands[i].m_pTarget == pTarget)
-                g_pSECoPMain->m_aStoredCommands.removeAt(i--);
+        for (auto it = g_pSECoPMain->m_aStoredCommands.begin(); it != g_pSECoPMain->m_aStoredCommands.end(); it++ ){
+            QList<ActionEntry>* pList = it.value();
+            for (int i = 0; i < pList->size(); ++i)
+                if (pList->at(i).m_pTarget == pTarget)
+                    pList->removeAt(i--);
+        }
         for (int i = 0; i < g_pSECoPMain->m_aExecutedCommands.size(); ++i)
             if (g_pSECoPMain->m_aExecutedCommands[i].m_pTarget == pTarget)
                 g_pSECoPMain->m_aExecutedCommands.removeAt(i--);
@@ -1787,32 +1798,21 @@ enum SECoP_S_error SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_act
 void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
                                     SECoP_dataPtr *ppValue, SECoP_S_error* piResult, QString szContextID)
 {
+
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     QMutexLocker locker(m_pMutex);
 
     if(!m_ContextIdMap.contains(szContextID)){
         iResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
         goto finish;
-
-
     }
 
 
+    QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
+
     if (!m_aStoredCommands.isEmpty())
     {
-        ActionEntry entry;
-        for (int i = 0; i < m_aStoredCommands.size(); ++i) {
-            ActionEntry list_entry= m_aStoredCommands.at(i);
-            if (list_entry.m_pNode->getContextID() == szContextID){
-                entry = m_aStoredCommands.takeAt(i);
-                break;
-            }
-        }
-        if (entry.m_pNode == nullptr){
-            iResult = SECoP_S_ERROR_NO_DATA;
-            goto finish;
-        }
-
+        ActionEntry entry(pList->takeFirst());
         entry.m_llCreateTime = QDateTime::currentMSecsSinceEpoch(); // update timestamp
         m_aExecutedCommands.append(entry);
         locker.unlock();
@@ -1843,9 +1843,8 @@ void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction,
             *ppValue = nullptr;
     }
     else
-    {
         iResult = SECoP_S_ERROR_NO_DATA;
-    }
+
 
 finish:
 
@@ -2222,40 +2221,45 @@ void SECoP_S_Main::sessionCleanUpTimer()
     // clean up old stored actions or started, but not finished actions
     QMutexLocker locker(m_pMutex);
     qint64 llNow(QDateTime::currentMSecsSinceEpoch());
-    QList<ActionEntry>* pList(&m_aStoredCommands);
-    for (int i = 0; i < 2; ++i)
-    {
-        for (int j = 0; j < pList->size(); ++j)
+
+    for (auto it = m_aStoredCommands.begin(); it != m_aStoredCommands.end(); it++ ){
+
+
+        QList<ActionEntry>* pList  = it.value();
+        for (int i = 0; i < 2; ++i)
         {
-            ActionEntry &entry = (*pList)[j];
-            if ((llNow - entry.m_llCreateTime) > SECOP_POLLING_TIMEOUT)
+            for (int j = 0; j < pList->size(); ++j)
             {
-                QString szParameter, szCommand;
-                if (entry.m_pParameter != nullptr)
-                    szParameter = entry.m_pParameter->getParameterID();
-                if (entry.m_pCommand != nullptr)
-                    szCommand = entry.m_pCommand->getCommandID();
-                qWarning().nospace() << "clearing action because of timeout: id=" << entry.m_qwId << " action=" << entry.m_iAction
-                    << " node=" << entry.m_pNode->getNodeID() << " module=" << entry.m_pModule->getModuleID()
-                    << " parameter=" << szParameter << " command=" << szCommand << " value=" << entry.m_pValue;
-                switch (entry.m_iAction)
+                ActionEntry &entry = (*pList)[j];
+                if ((llNow - entry.m_llCreateTime) > SECOP_POLLING_TIMEOUT)
                 {
-                    case SECoP_S_ACTION_READ:
-                    case SECoP_S_ACTION_CHANGE:
-                        entry.m_pModule->doParameterResult(SECoP_S_ERROR_TIMEOUT, entry.m_qwRequestId, entry.m_pParameter,
-                                                           SECoP_dataPtr(), SECoP_dataPtr(), std::numeric_limits<double>::quiet_NaN());
-                        break;
-                    case SECoP_S_ACTION_DO:
-                        entry.m_pModule->doCommandResult(entry.m_pTarget, SECoP_S_ERROR_TIMEOUT, entry.m_pCommand, SECoP_dataPtr(),
-                                                         std::numeric_limits<double>::quiet_NaN());
-                        break;
-                    default:
-                        break;
+                    QString szParameter, szCommand;
+                    if (entry.m_pParameter != nullptr)
+                        szParameter = entry.m_pParameter->getParameterID();
+                    if (entry.m_pCommand != nullptr)
+                        szCommand = entry.m_pCommand->getCommandID();
+                    qWarning().nospace() << "clearing action because of timeout: id=" << entry.m_qwId << " action=" << entry.m_iAction
+                        << " node=" << entry.m_pNode->getNodeID() << " module=" << entry.m_pModule->getModuleID()
+                        << " parameter=" << szParameter << " command=" << szCommand << " value=" << entry.m_pValue;
+                    switch (entry.m_iAction)
+                    {
+                        case SECoP_S_ACTION_READ:
+                        case SECoP_S_ACTION_CHANGE:
+                            entry.m_pModule->doParameterResult(SECoP_S_ERROR_TIMEOUT, entry.m_qwRequestId, entry.m_pParameter,
+                                                               SECoP_dataPtr(), SECoP_dataPtr(), std::numeric_limits<double>::quiet_NaN());
+                            break;
+                        case SECoP_S_ACTION_DO:
+                            entry.m_pModule->doCommandResult(entry.m_pTarget, SECoP_S_ERROR_TIMEOUT, entry.m_pCommand, SECoP_dataPtr(),
+                                                             std::numeric_limits<double>::quiet_NaN());
+                            break;
+                        default:
+                            break;
+                    }
+                    pList->removeAt(j--);
                 }
-                pList->removeAt(j--);
             }
+            pList = &m_aExecutedCommands;
         }
-        pList = &m_aExecutedCommands;
     }
 }
 

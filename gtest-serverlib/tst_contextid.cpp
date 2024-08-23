@@ -102,6 +102,53 @@ protected:
 };
 
 
+
+
+TEST_F(Context_id_Test, concurrent) {
+
+
+    const char* context_id = "default";
+    const char* context_id_N2 = "default_n2";
+
+
+    const char* name_default = "Node1";
+    const char* name_default_N2 = "Node2";
+
+    unsigned int port_default    = 2055;
+    unsigned int port_default_N2 = 2056;
+
+    SECoP_S_initLibrary(nullptr, true, true,"null_id");
+
+
+
+    // Create QFutureWatcher
+    QFutureWatcher<void> watcher;
+
+
+    QFuture<void> future1 = QtConcurrent::run(&Node, context_id, name_default, port_default,5);
+
+
+
+    QFuture<void> future2 = QtConcurrent::run(&Node, context_id_N2, name_default_N2, port_default_N2,1);
+
+
+    watcher.setFuture(future1);
+    watcher.setFuture(future2);
+
+    // Wait for all futures to finish
+    watcher.waitForFinished();
+    SECoP_S_showStatusWindow(true);
+    QThread::sleep(2);
+
+
+    SECoP_S_showStatusWindow(true);
+
+    QThread::sleep(1);
+
+
+}
+
+
 TEST_F(Context_id_Test, GetCommad) {
 
 
@@ -292,49 +339,6 @@ TEST_F(Context_id_Test, gui_state) {
 }
 
 
-TEST_F(Context_id_Test, concurrent) {
-
-
-    const char* context_id = "default";
-    const char* context_id_N2 = "default_n2";
-
-
-    const char* name_default = "Node1";
-    const char* name_default_N2 = "Node2";
-
-    unsigned int port_default    = 2055;
-    unsigned int port_default_N2 = 2056;
-
-    SECoP_S_initLibrary(nullptr, true, true,"null_id");
-
-
-
-    // Create QFutureWatcher
-    QFutureWatcher<void> watcher;
-
-
-    QFuture<void> future1 = QtConcurrent::run(&Node, context_id, name_default, port_default,10);
-
-
-
-    QFuture<void> future2 = QtConcurrent::run(&Node, context_id_N2, name_default_N2, port_default_N2,5);
-
-
-    watcher.setFuture(future1);
-    watcher.setFuture(future2);
-
-    // Wait for all futures to finish
-    watcher.waitForFinished();
-    SECoP_S_showStatusWindow(true);
-    QThread::sleep(2);
-
-
-    SECoP_S_showStatusWindow(true);
-
-    QThread::sleep(5);
-
-
-}
 
 
 

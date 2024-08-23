@@ -142,7 +142,7 @@ private:
     /// the globals list of existing SEC-nodes
     QList<SECoP_S_Node*> m_apNodes;
     /// for polling interface: stored commands, not executed yet
-    QList<ActionEntry>   m_aStoredCommands;
+    QMap<QString,QList<ActionEntry>*>   m_aStoredCommands;
     /// for polling interface: commands currently in execution
     QList<ActionEntry>   m_aExecutedCommands;
     /// a mutex for exclusive access to data
