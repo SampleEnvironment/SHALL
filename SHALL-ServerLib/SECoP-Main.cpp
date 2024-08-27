@@ -866,7 +866,7 @@ void SECoP_S_Main::createNode(QString szContextID,QString szID, QString szDesc, 
     QMutexLocker locker(m_pMutex);
 
     if (szContextID.isEmpty()){
-        *piResult = SECoP_S_ERROR_INTERNAL; //TODO create new error message
+        *piResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
         return;
     }
 
@@ -1681,6 +1681,11 @@ void SECoP_S_Main::forgetStoredCommands(QObject* pTarget)
         QMutexLocker locker(g_pSECoPMain->m_pMutex);
         for (auto it = g_pSECoPMain->m_aStoredCommands.begin(); it != g_pSECoPMain->m_aStoredCommands.end(); it++ ){
             QList<ActionEntry>* pList = it.value();
+
+            if(pList == nullptr){
+                qWarning().nospace() << "requested ActionEntry list is null";
+                continue;
+            }
             for (int i = 0; i < pList->size(); ++i)
                 if (pList->at(i).m_pTarget == pTarget)
                     pList->removeAt(i--);
@@ -1807,12 +1812,24 @@ enum SECoP_S_error SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_act
 void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction, char* szParameter, int* piParameterSize,
                                     SECoP_dataPtr *ppValue, SECoP_S_error* piResult, QString szContextID)
 {
+    QList<ActionEntry>* pList;
 
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     QMutexLocker locker(m_pMutex);
 
-    //TODO add checks
-    QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
+    if(!m_aStoredCommands.contains(szContextID)){
+        iResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
+        goto finish;
+    }
+
+    pList = m_aStoredCommands.value(szContextID);
+
+
+    if(pList == nullptr){
+        iResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
+        goto finish;
+    }
+
 
     if(!m_ContextIdMap.contains(szContextID)){
         iResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
@@ -2235,8 +2252,13 @@ void SECoP_S_Main::sessionCleanUpTimer()
 
     for (auto it = m_aStoredCommands.begin(); it != m_aStoredCommands.end(); it++ ){
 
-
+        if(it.value() == nullptr){
+            qWarning().nospace() << "requested ActionEntry list is null";
+            continue;
+        }
         QList<ActionEntry>* pList  = it.value();
+
+
         for (int i = 0; i < 2; ++i)
         {
             for (int j = 0; j < pList->size(); ++j)

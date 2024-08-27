@@ -101,7 +101,6 @@ SECoP_S_Node::~SECoP_S_Node()
 
         QThread* pModuleThread(pModule->thread());
 
-
         delete pModule;
 
         if (pModuleThread != pMySelfThread)

@@ -23,7 +23,6 @@
 #include <QMap>
 #include <QTcpSocket>
 #include <QHostAddress>
-#include <iostream>
 #include  "test_node.h"
 
 #define CONTEXT_ID "default"
