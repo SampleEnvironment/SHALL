@@ -39,11 +39,15 @@ SECoP_S_Worker::SECoP_S_Worker(QTcpSocket* pSocket, SECoP_S_Node* pNode, QObject
     // connect socket and signal
     // note - Qt::DirectConnection is used because it's multithreaded
     //        This makes the slot to be invoked immediately, when the signal is emitted.
-    connect(m_pSocket, SIGNAL(readyRead()), this, SLOT(readyRead())/*, Qt::DirectConnection*/);
+    connect(m_pSocket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::DirectConnection);
     connect(m_pSocket, SIGNAL(disconnected()), this, SLOT(disconnected()));
 
     // We'll have multiple clients, we want to know which is which
     SECoP_S_Main::logAddConnection(m_pNode, m_pSocket);
+
+    // prevents the readyRead() event emitted by the Socket from being lost, if client has already sent its
+    // first message, but the signal slot connection has not been established yet
+    readyRead();
 }
 
 /**
