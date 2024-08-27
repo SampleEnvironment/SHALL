@@ -893,6 +893,11 @@ void SECoP_S_Module::timerEvent(QTimerEvent* pEvent)
     }
 }
 
+
+
+
+
+
 /// \returns a new request id for parameter read or change
 quint64 SECoP_S_Module::nextRequestId()
 {

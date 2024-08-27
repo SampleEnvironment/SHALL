@@ -7,6 +7,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include <QMutexLocker>
 #include <QStringList>
 #include <QTcpServer>
+#include <QEventLoop>
 #include <QTcpSocket>
 #include "SECoP-Command.h"
 #include "SECoP-Main.h"
@@ -95,9 +96,14 @@ SECoP_S_Node::~SECoP_S_Node()
     }
     for (int i = 0; i < m_apModules.size(); ++i)
     {
+
         SECoP_S_Module* pModule(m_apModules[i]);
+
         QThread* pModuleThread(pModule->thread());
-        pModule->deleteLater();
+
+
+        delete pModule;
+
         if (pModuleThread != pMySelfThread)
             pModuleThread->quit();
     }

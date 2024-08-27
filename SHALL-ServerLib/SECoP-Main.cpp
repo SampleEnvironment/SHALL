@@ -636,10 +636,12 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
                 continue;
 
 
+
             if (pNode != nullptr)
             {
                 m_pGui->removeNode(pNode);
                 QMutexLocker locker(m_pMutex);
+
 
                 QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
                 for (int i = 0; i < pList->size(); ++i)
@@ -673,6 +675,13 @@ void SECoP_S_Main::cleanUpSlot(bool bNodeOnly,QString szContextID)
         // Remove entry in ContextID Map
         if(m_ContextIdMap.contains(szContextID))
             m_ContextIdMap.remove(szContextID);
+
+        if(m_aStoredCommands.contains(szContextID)){
+            QList<ActionEntry>* pList =  m_aStoredCommands.value(szContextID);
+            pList->clear();
+            delete pList;
+            m_aStoredCommands.remove(szContextID);
+        }
 
         if (m_pGui != nullptr)
         {
@@ -1802,15 +1811,17 @@ void SECoP_S_Main::getStoredCommand(qulonglong* pllId, SECoP_S_action* piAction,
     enum SECoP_S_error iResult(SECoP_S_SUCCESS);
     QMutexLocker locker(m_pMutex);
 
+    //TODO add checks
+    QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
+
     if(!m_ContextIdMap.contains(szContextID)){
         iResult = SECoP_S_ERROR_INVALID_CONTEXT_ID;
         goto finish;
     }
 
 
-    QList<ActionEntry>* pList = m_aStoredCommands.value(szContextID);
 
-    if (!m_aStoredCommands.isEmpty())
+    if (!pList->isEmpty())
     {
         ActionEntry entry(pList->takeFirst());
         entry.m_llCreateTime = QDateTime::currentMSecsSinceEpoch(); // update timestamp

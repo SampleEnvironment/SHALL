@@ -65,6 +65,8 @@ public:
 
     void quitThreadWhileDelete(bool bQuit);
 
+
+
 signals:
     /**
      * \brief This signal is triggered for a new value of a parameter
