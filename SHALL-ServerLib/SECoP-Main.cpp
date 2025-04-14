@@ -11,6 +11,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include <QMutexLocker>
 #include <QDateTime>
 #include <QHostAddress>
+#include <QRegularExpression>
 #include <iostream>
 #include "SECoP.h"
 #include "SECoP-Command.h"
@@ -2211,7 +2212,8 @@ bool SECoP_S_Main::isValidName(QString szName)
 {
     if (szName.isEmpty() || szName.size() > 63)
         return false;
-    return QRegExp("_?[A-Za-z][0-9A-Za-z_]*", Qt::CaseSensitive, QRegExp::RegExp2).exactMatch(szName);
+    static QRegularExpression regex("^_?[A-Za-z][0-9A-Za-z_]*$");
+    return regex.match(szName).hasMatch();
 }
 
 /**

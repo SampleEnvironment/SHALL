@@ -1026,7 +1026,7 @@ std::string ClientGui::readParameter(QString Node, QString Module, QString Param
         ErrorVal=item.pSigmaOrResult;
         if(forced)//try to send a message if forced is true
         {
-            SECoPCommand.append("reply "+Module+":"+ParamName);            //first the expected answer is created to store this as hash in the request list
+            SECoPCommand.append(("reply "+Module+":"+ParamName).toUtf8());            //first the expected answer is created to store this as hash in the request list
             if (!pConnection->request.contains(SECoPCommand))               //answer of a change request is changed
             {
                 qint64 qiStart(QDateTime::currentMSecsSinceEpoch());
@@ -1113,7 +1113,7 @@ std::string ClientGui::testRead(QString Node, QString Module, QString ParamName,
         dTimestamp=item.timestamp;
         ErrorVal=item.pSigmaOrResult;
 
-        SECoPCommand.append("reply "+Module+":"+ParamName);            //first the expected answer is created to store this as hash in the request list
+        SECoPCommand.append(("reply "+Module+":"+ParamName).toUtf8());            //first the expected answer is created to store this as hash in the request list
         if (!pConnection->request.contains(SECoPCommand))               //answer of a change request is changed
         {
             start=QDateTime::currentMSecsSinceEpoch();
@@ -1226,7 +1226,7 @@ std::string ClientGui::writeParam(QString Node, QString Module, QString Acc, SEC
     }
     if (item.rwxType=='w')//Acc is writable
     {
-        SECoPCommand.append("changed "+Module+":"+Acc);                 //first the expected answer is created to store this as hash in the request list
+        SECoPCommand.append(("changed "+Module+":"+Acc).toUtf8());                 //first the expected answer is created to store this as hash in the request list
         if (!pConnection->request.contains(SECoPCommand))               //answer of a change request is changed
         {
             qint64 qiStart(QDateTime::currentMSecsSinceEpoch());
@@ -1245,7 +1245,7 @@ std::string ClientGui::writeParam(QString Node, QString Module, QString Acc, SEC
     }
     if(item.rwxType=='x')
     {
-        SECoPCommand.append("done+ "+Module+":"+Acc);                   //first the expected answer is created to store this as hash in the request list
+        SECoPCommand.append(("done+ "+Module+":"+Acc).toUtf8());                   //first the expected answer is created to store this as hash in the request list
         if (!pConnection->request.contains(SECoPCommand))               //answer of a do request is done
         {
             qint64 qiStart(QDateTime::currentMSecsSinceEpoch());
@@ -1415,10 +1415,10 @@ void ClientGui::addAccToTree(QTreeWidgetItem* ptrTreeParent,  QString acc, char 
     itm->setText(1, QString(cType));
     switch (cType)
     {
-        case 'r': itm->setBackgroundColor(0, QColor(0xE0,0xE0,0xE0)); break;
-        case 'w': itm->setBackgroundColor(0, QColor(0xC0,0xC0,0xC0)); break;
-        case 'x': itm->setBackgroundColor(0, QColor(0xA0,0xA0,0xA0)); break;
-        default: itm->setBackgroundColor(0, QColor(0xC0,0xC0,0xFF)); break;
+        case 'r': itm->setBackground(0, QColor(0xE0,0xE0,0xE0)); break;
+        case 'w': itm->setBackground(0, QColor(0xC0,0xC0,0xC0)); break;
+        case 'x': itm->setBackground(0, QColor(0xA0,0xA0,0xA0)); break;
+        default: itm->setBackground(0, QColor(0xC0,0xC0,0xFF)); break;
     }
     ptrTreeParent->addChild(itm);
 }
@@ -1607,7 +1607,7 @@ void ClientGui::setTableWidgetItem(int iRow, int iCol, QString ItemText,QTableWi
         cellwidth  = pTable->columnWidth(accValueCol) + pTable->columnWidth(accUnitCol) + pTable->columnWidth(lineEditCol);  
     if(iRow==messageRow)
         cellwidth = pTable->columnWidth(firstCol) + pTable->columnWidth(nameOfAccCol) + pTable->columnWidth(accValueCol) + pTable->columnWidth(accUnitCol) + pTable->columnWidth(lineEditCol) + pTable->columnWidth(vertikalLineCol) + pTable->columnWidth(buttonCol);
-    if((lines*cellwidth) <= (fm.width(ItemText)))
+    if((lines*cellwidth) <= (fm.horizontalAdvance(ItemText)))
         bEllipsis = true;
     if(bEllipsis)
         pToItem->setToolTip("<html>"+ItemText+"<\\html>");//dirty hack 8) just for the show

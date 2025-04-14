@@ -65,7 +65,7 @@ public:
 private:
     static Client_Main* m_pInstance;
     ClientGui*         m_pGui;
-    QMutex*            m_pMutex;
+    QRecursiveMutex*   m_pMutex;
     bool               m_bShowGUI;
 
 };

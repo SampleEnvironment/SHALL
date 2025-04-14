@@ -13,3 +13,4 @@ lib/*
 Makefile
 Makefile.Debug
 Makefile.Release
+build

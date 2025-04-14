@@ -248,7 +248,7 @@ Client_Main::Client_Main()
 {
     m_pInstance = this;
     m_pGui = new ClientGui(g_bShowGUI);
-    m_pMutex = new QMutex(QMutex::Recursive);
+    m_pMutex = new QRecursiveMutex();
 }
 
 /**
@@ -268,7 +268,7 @@ Client_Main::~Client_Main()
     if (m_pMutex != nullptr)
     {
         m_pMutex->lock();
-        QMutex* pMutex(m_pMutex);
+        QRecursiveMutex* pMutex(m_pMutex);
         m_pMutex = nullptr;
         pMutex->unlock();
         delete pMutex;

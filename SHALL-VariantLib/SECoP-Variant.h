@@ -741,15 +741,19 @@ public:
     typedef _Tp                            mapped_type;
     typedef std::pair<const key_type, _Tp> value_type;
 
-    class value_compare : public std::binary_function<value_type, value_type, bool>
+    class value_compare
     {
         friend class SECoPordered_map<_Key, _Tp, _Compare, _Alloc>;
     protected:
         _Compare comp;
         value_compare(_Compare __c) : comp(__c) { }
     public:
+        typedef value_type first_argument_type;
+        typedef value_type second_argument_type;
+        typedef bool result_type;
+
         bool operator()(const value_type& __x, const value_type& __y) const
-            { return comp(__x.first, __y.first); }
+        { return comp(__x.first, __y.first); }
     };
 
 private:

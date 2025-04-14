@@ -6,6 +6,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include <QMutex>
 #include <QMutexLocker>
 #include <QStringList>
+#include <QRegularExpression>
 #include <QTcpServer>
 #include <QEventLoop>
 #include <QTcpSocket>
@@ -1080,7 +1081,7 @@ QString SECoP_S_Node::checkDatatype(bool& bError, QString szName, const CSECoPba
                     {
                         QString szTmp(QString("%1_warn").arg(p->szName));
                         if (p->szRegExp != nullptr && !ahErrors.contains(szTmp) &&
-                            !QRegExp(p->szRegExp).exactMatch(QString::fromStdString(v.get<std::string>())))
+                            !QString::fromStdString(v.get<std::string>()).contains(QRegularExpression(p->szRegExp)))
                         {
                             ahErrors[szTmp] = 0;
                             szResult.append(QString("\ninvalid \"%1\" in \"datainfo\" property of %2").arg(p->szName).arg(szName));
@@ -1268,12 +1269,12 @@ QString SECoP_S_Node::checkInterfaceClass(bool& bError, const SECoP_S_Module* pM
                 const char* szItemName(pEnum->getItemName(i));
                 if (szItemName == nullptr || szItemName[0] == '\0')
                     goto wrongStatusEnum;
-                if (QRegExp("idle(_.*)?", Qt::CaseInsensitive, QRegExp::RegExp2).exactMatch(szItemName))
+                if (QString(szItemName).contains(QRegularExpression("idle(_.*)?", QRegularExpression::CaseInsensitiveOption)))
                 {
                     bIdle = true;
                     continue;
                 }
-                if (QRegExp("busy(_.*)?", Qt::CaseInsensitive, QRegExp::RegExp2).exactMatch(szItemName))
+                if (QString(szItemName).contains(QRegularExpression("busy(_.*)?", QRegularExpression::CaseInsensitiveOption)))
                 {
                     bBusy = true;
                     continue;
