@@ -12,7 +12,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include "SECoP-types.h"
 
 // forward declarations
-class QMutex;
+class QRecursiveMutex;
 class SECoP_S_Command;
 class SECoP_S_Node;
 class SECoP_S_Parameter;
@@ -96,7 +96,7 @@ private:
     quint64 nextRequestId();
 
     /// exclusive access to module internals
-    QMutex*                     m_pMutex;
+    QRecursiveMutex*            m_pMutex;
     /// associated parent node for this module
     SECoP_S_Node*               m_pNode;
     /// should the module thread end together with module

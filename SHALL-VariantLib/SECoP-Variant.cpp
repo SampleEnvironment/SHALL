@@ -43,7 +43,7 @@ static QHash<const CSECoPbaseType*, unsigned int> SECoP_V_g_huItems;
  * \brief mutex for multi-threaded access to \ref SECoP_V_g_huItems
  * \ingroup intfunc
  */
-static QMutex* SECoP_V_g_pMutex(nullptr);
+static QRecursiveMutex* SECoP_V_g_pMutex(nullptr);
 
 /**
  * \brief initialize global mutex
@@ -52,7 +52,7 @@ static QMutex* SECoP_V_g_pMutex(nullptr);
 static void SECoP_V_initMutex()
 {
     if (SECoP_V_g_pMutex == nullptr)
-        SECoP_V_g_pMutex = new QMutex(QMutex::Recursive);
+        SECoP_V_g_pMutex = new QRecursiveMutex();
 }
 
 /*
@@ -374,7 +374,7 @@ int SECoP_V_copy(CSECoPbaseType** ppDst, const CSECoPbaseType* pSrc)
  */
 void SECoP_V_printFile(FILE* pOutfile, const CSECoPbaseType* pData, int iVerbosity)
 {
-    QTextStream output(pOutfile, QIODevice::WriteOnly);
+    QTextStream output(pOutfile);
     output.setAutoDetectUnicode(true);
     output.setGenerateByteOrderMark(false);
     output.setFieldAlignment(QTextStream::AlignLeft);
@@ -399,7 +399,7 @@ void SECoP_V_printFile(FILE* pOutfile, const CSECoPbaseType* pData, int iVerbosi
 QByteArray SECoP_V_printString(const CSECoPbaseType* pData, int iVerbosity)
 {
     QByteArray abyResult;
-    QTextStream output(&abyResult, QIODevice::ReadWrite);
+    QTextStream output(&abyResult);
     output.setAutoDetectUnicode(true);
     output.setGenerateByteOrderMark(false);
     output.setFieldAlignment(QTextStream::AlignLeft);
@@ -444,7 +444,7 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
 
     int iNextLevel(iLevel + 1);
     if (iLevel > 0)
-        rOutput << QString().sprintf("%*c", 2 * iLevel, ' ').toUtf8();
+        rOutput << QString::asprintf("%*c", 2 * iLevel, ' ').toUtf8();
     if (pData == nullptr)
     {
         rOutput << "?NULL?\n";
@@ -550,7 +550,7 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
                 rOutput << " of";
                 SECoP_V_printHelper(rOutput, pType, iVerbosity, iNextLevel);
                 if (iLevel > 0)
-                    rOutput << QString().sprintf("%*c", 2 * iLevel, ' ').toUtf8();
+                    rOutput << QString::asprintf("%*c", 2 * iLevel, ' ').toUtf8();
             }
         }
         else if (pCommand != nullptr)
@@ -563,10 +563,10 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
         SECoP_json a(pData->additional());
         if (!a.empty())
         {
-            rOutput << "\n" << QString().sprintf("%*c  ", 2 * iLevel, ' ').toUtf8() << QString::fromStdString(a.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)) << "\n";
+            rOutput << "\n" << QString::asprintf("%*c  ", 2 * iLevel, ' ').toUtf8() << QString::fromStdString(a.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)) << "\n";
             ++iNextLevel;
             if (iLevel > 0)
-                rOutput << QString().sprintf("%*c", 2 * iLevel, ' ').toUtf8();
+                rOutput << QString::asprintf("%*c", 2 * iLevel, ' ').toUtf8();
         }
     }
     if (iVerbosity > 0)
@@ -578,7 +578,7 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
         {
             CSECoPbaseType* pItem(pStruct->getItem(i));
             if (iLevel > 0)
-                rOutput << QString().sprintf("%*c", 2 * iLevel, ' ').toUtf8();
+                rOutput << QString::asprintf("%*c", 2 * iLevel, ' ').toUtf8();
             rOutput << QString("%1: ").arg(pStruct->getItemName(i).constData()).toUtf8();
             if (!SECoP_V_printHelper(rOutput, pItem, iVerbosity, iNextLevel))
                 return false;
@@ -602,7 +602,7 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
     {
         rOutput << "\n";
         if (iLevel > 0)
-            rOutput << QString().sprintf("%*c", 2 * iLevel, ' ').toUtf8();
+            rOutput << QString::asprintf("%*c", 2 * iLevel, ' ').toUtf8();
         rOutput << "arg: ";
         const CSECoPbaseType* pArgument(pCommand->getArgument());
         if (pArgument != nullptr)
@@ -613,7 +613,7 @@ static bool SECoP_V_printHelper(QTextStream &rOutput, const CSECoPbaseType* pDat
         else
             rOutput << "null\n";
         if (iLevel > 0)
-            rOutput << QString().sprintf("%*c", 2 * iLevel, ' ').toUtf8();
+            rOutput << QString::asprintf("%*c", 2 * iLevel, ' ').toUtf8();
         rOutput << "res:" ;
         const CSECoPbaseType* pResult(pCommand->getResult());
         if (pResult != nullptr)

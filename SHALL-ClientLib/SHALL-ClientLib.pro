@@ -6,7 +6,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
 }
 
 CONFIG   +=c++11
-QT       += network core gui widgets
+QT       += network core gui widgets core5compat
 
 TARGET = SHALLclient
 TEMPLATE = lib

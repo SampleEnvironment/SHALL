@@ -5,7 +5,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("need Qt 5.x or higher with C++11 support")
 }
 
-QT     += core
+QT     += core core5compat
 CONFIG += c++11
 TEMPLATE = lib
 

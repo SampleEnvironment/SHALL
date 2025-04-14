@@ -14,7 +14,7 @@ class SECoP_S_StatusGui;
 }
 class SECoP_S_Node;
 class QGridLayout;
-class QMutex;
+class QRecursiveMutex;
 class QPlainTextEdit;
 class QTcpSocket;
 
@@ -88,7 +88,7 @@ private:
     /// the status window created by the Qt assist
     Ui::SECoP_S_StatusGui* ui;
     /// exclusive access to internal data
-    QMutex*              m_pMutex;
+    QRecursiveMutex*              m_pMutex;
     /// false: do not allow to close window, true: for exit allow closing the window
     bool                 m_bAllowClose;
     /// flag, if the status window should be visible

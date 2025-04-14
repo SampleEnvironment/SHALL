@@ -43,7 +43,7 @@ SECoP_S_Module::SECoP_S_Module(QString szModuleName, SECoP_S_Node *pNode, QObjec
     , m_qwRequestId(10)
 {
     enum SECoP_S_error iError(SECoP_S_SUCCESS);
-    m_pMutex = new QMutex(QMutex::Recursive);
+    m_pMutex = new QRecursiveMutex();
     addProperty("description", CSECoPbaseType::simpleString("module without description"), true, &iError);
     addProperty("pollinterval", CSECoPbaseType::simpleDouble(SECOP_DEFAULT_POLLINTERVAL / 1000.0), true, &iError);
 }
@@ -68,7 +68,7 @@ SECoP_S_Module::~SECoP_S_Module()
     if (m_pMutex != nullptr)
     {
         m_pMutex->lock();
-        QMutex* pMutex(m_pMutex);
+        QRecursiveMutex* pMutex(m_pMutex);
         m_pMutex = nullptr;
         pMutex->unlock();
         delete pMutex;

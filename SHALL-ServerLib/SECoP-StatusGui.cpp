@@ -6,7 +6,6 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include <QHostAddress>
 #include <QTcpSocket>
 #include <QTimer>
-#include <QDesktopWidget>
 #include <QMutex>
 #include <QThread>
 #include <QTextDocument>
@@ -39,7 +38,7 @@ SECoP_S_StatusGui::SECoP_S_StatusGui(bool bShowGUI, QWidget *parent)
 {
     ui->setupUi(this);
     ui->eLog->setMaximumBlockCount(MAXIMUM_LOG_ENTRIES);
-    m_pMutex = new QMutex(QMutex::Recursive);
+    m_pMutex = new QRecursiveMutex();
 
     QList<QHostAddress> aAdresses(QNetworkInterface::allAddresses());
     ui->eAddresses->clear();

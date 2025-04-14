@@ -18,7 +18,7 @@ class SECoP_S_Node;
 class SECoP_S_Parameter;
 class SECoP_S_StatusGui;
 class SECoP_S_Worker;
-class QMutex;
+class QRecursiveMutex;
 class QTimer;
 class QTcpSocket;
 
@@ -146,7 +146,7 @@ private:
     /// for polling interface: commands currently in execution
     QList<ActionEntry>   m_aExecutedCommands;
     /// a mutex for exclusive access to data
-    QMutex*              m_pMutex;
+    QRecursiveMutex*     m_pMutex;
     /// a timer which checks stored and executed actions for timeouts
     QTimer*              m_pSessionCleanUpTimer;
     /// VCS marker and the Git hash or SVN revision of this library

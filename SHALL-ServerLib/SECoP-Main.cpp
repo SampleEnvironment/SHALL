@@ -115,7 +115,7 @@ static std::thread* g_pThread = nullptr;
 static volatile bool g_bInitialized = false;
 
 
-static QMutex*   g_pMutex =  new QMutex(QMutex::Recursive);
+static QRecursiveMutex*   g_pMutex =  new QRecursiveMutex();
 
 /* forward declarations */
 static void SECoP_S_initLibraryThread(void);
@@ -468,7 +468,7 @@ SECoP_S_Main::SECoP_S_Main()
 {
     m_pInstance = this;
     m_pGui = new SECoP_S_StatusGui(g_bShowGUI);
-    m_pMutex = new QMutex(QMutex::Recursive);
+    m_pMutex = new QRecursiveMutex();
     m_pSessionCleanUpTimer = new QTimer;
     connect(m_pSessionCleanUpTimer, SIGNAL(timeout()), this, SLOT(sessionCleanUpTimer()), Qt::QueuedConnection);
     m_pSessionCleanUpTimer->start(1000);
@@ -527,7 +527,7 @@ SECoP_S_Main::~SECoP_S_Main()
     if (m_pMutex != nullptr)
     {
         m_pMutex->lock();
-        QMutex* pMutex(m_pMutex);
+        QRecursiveMutex* pMutex(m_pMutex);
         m_pMutex = nullptr;
         pMutex->unlock();
         delete pMutex;

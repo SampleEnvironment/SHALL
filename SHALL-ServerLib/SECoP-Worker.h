@@ -15,7 +15,7 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include "SECoP-types.h"
 
 // forward declaration
-class QMutex;
+class QRecursiveMutex;
 class SECoP_S_Command;
 class SECoP_S_Module;
 class SECoP_S_Node;
@@ -98,7 +98,7 @@ private:
     };
 
     /// exclusive access to internal data
-    QMutex*                                 m_pMutex;
+    QRecursiveMutex*                        m_pMutex;
     /// the TCP connection to the client
     QTcpSocket*                             m_pSocket;
     /// the associated SEC-node

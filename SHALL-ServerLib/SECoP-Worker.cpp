@@ -34,7 +34,7 @@ SECoP_S_Worker::SECoP_S_Worker(QTcpSocket* pSocket, SECoP_S_Node* pNode, QObject
     , m_iTodoTimer(0)
 {
     m_pSocket->setParent(this); // take ownership which allows changing the thread
-    m_pMutex = new QMutex(QMutex::Recursive);
+    m_pMutex = new QRecursiveMutex();
 
     // connect socket and signal
     // note - Qt::DirectConnection is used because it's multithreaded
@@ -66,7 +66,7 @@ SECoP_S_Worker::~SECoP_S_Worker()
     if (m_pMutex != nullptr)
     {
         m_pMutex->lock();
-        QMutex* pMutex(m_pMutex);
+        QRecursiveMutex* pMutex(m_pMutex);
         m_pMutex = nullptr;
         pMutex->unlock();
         delete pMutex;
@@ -836,7 +836,7 @@ void SECoP_S_Worker::writeError(QString szAction, QString szSpecifier, enum SECo
         a.push_back(SECoP_json(szDescription.toStdString()));
     a.push_back(SECoP_json::object_t());
     szData.append(' ');
-    szData.append(QString::fromStdString(a.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)));
+    szData.append(QString::fromStdString(a.dump(-1, ' ', false, nlohmann::detail::error_handler_t::replace)).toUtf8());
     writeData(szData);
 }
 
