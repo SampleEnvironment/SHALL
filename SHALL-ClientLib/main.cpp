@@ -38,6 +38,8 @@ static char*            g_szArgv0 = nullptr;
 static std::thread*     g_pThread = nullptr;
 /// global initialization status
 static volatile bool    g_bInitialized = false;
+/// global log filse pointer
+static FILE* g_pLogFile = nullptr;
 
 /* forward declarations */
 static void SECoP_C_initLibraryThread(void);
@@ -189,6 +191,7 @@ extern "C" void SHALL_EXPORT SECoP_C_doneLibrary(int bNodeOnly)
  * \param[in] context   where were the message generated
  * \param[in] szMessage the message text
  */
+// Modify the SECoP_C_MessageHandler function:
 void SECoP_C_MessageHandler(QtMsgType iType, const QMessageLogContext &context, const QString &szMessage)
 {
     QString szMsgType("unknown");
@@ -226,13 +229,29 @@ void SECoP_C_MessageHandler(QtMsgType iType, const QMessageLogContext &context, 
     if (!bMultiLine)
         szOutput.prepend(QChar(' '));
     szOutput.prepend(QString("%1(%2)/%3:").arg(context.file).arg(context.line).arg(szMsgType));
-    if (g_pOldMessageHandler == nullptr) // if we never had a previous message logger or Windows
-        std::cerr << qUtf8Printable(QDateTime::currentDateTime().toString("yyyy/MM/dd HH:mm:ss.zzz "))
-                  << qUtf8Printable(szOutput) << std::endl;
+    
+    // Format timestamp and full message
+    QString fullMessage = QDateTime::currentDateTime().toString("yyyy/MM/dd HH:mm:ss.zzz ") + szOutput;
+    
+    // Output to console if no previous handler
+    if (g_pOldMessageHandler == nullptr)
+        std::cerr << qUtf8Printable(fullMessage) << std::endl;
+    
+    // Write to log file if available
+    if (g_pLogFile != nullptr)
+    {
+        fprintf(g_pLogFile, "%s\n", qPrintable(fullMessage));
+        fflush(g_pLogFile);
+    }
+    
+    // Pass to GUI for display
     Client_Main::log(szOutput);
-    if (g_pOldMessageHandler != nullptr) // call previous message logger
+    
+    // Call previous message logger if available
+    if (g_pOldMessageHandler != nullptr)
         (*g_pOldMessageHandler)(iType, context, szMessage);
 }
+
 
 /// the singleton instance of SECoP_Main, \ref g_pSECoPMain
 Client_Main* Client_Main::m_pInstance = nullptr;

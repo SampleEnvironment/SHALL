@@ -37,6 +37,27 @@ typedef void QApplication; // declaration for C programs
  */
 enum SECoP_S_error SHALL_EXPORT SECoP_S_initLibrary(QApplication *pApplication, int bGUI, int bEnableFunctionPointers, const char* szContextID);
 
+
+
+/**
+ * \brief Initialize logging to a file
+ * \ingroup expfunc
+ * \param[in] szLogFilePath path to log file, if nullptr uses default "shall_server.log"
+ * \param[in] maxSizeBytes maximum log file size before the log file is rotated out
+ * \param[in} maxBackupFiles Maximum number of log files that are kept
+ * \return on success SECoP_S_SUCCESS or a SECoP_S_error
+ */
+enum SECoP_S_error SHALL_EXPORT SECoP_S_enableFileLogging(const char* szLogFilePath, long long maxSizeBytes, int maxBackupFiles);
+
+
+
+/**
+ * \brief Stop logging to file and close the log file
+ * \ingroup expfunc
+ */
+void SHALL_EXPORT SECoP_S_disableFileLogging();
+
+
 /**
  * \brief Call SECoP_S_doneLibrary, if you finished using this library. If you
  *        call this with bNodeOnly==false, then the library will do its best

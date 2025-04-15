@@ -12,6 +12,8 @@ Copyright (c) 2017-2019 Helmholtz-Zentrum Berlin fuer Materialien und Energie Gm
 #include <QDateTime>
 #include <QHostAddress>
 #include <QRegularExpression>
+#include <QFileInfo>
+#include <QDir>
 #include <iostream>
 #include "SECoP.h"
 #include "SECoP-Command.h"
@@ -118,13 +120,25 @@ static volatile bool g_bInitialized = false;
 
 static QRecursiveMutex*   g_pMutex =  new QRecursiveMutex();
 
+
+// Global logging variables
+
+/// global log file pointer
+static FILE* g_pLogFile = nullptr;
+
+static int g_maxLogSize = 10 * 1024 * 1024;
+static int g_maxLogFiles = 5;
+static QString g_logFilePath;
+
+
 /* forward declarations */
 static void SECoP_S_initLibraryThread(void);
 static void SECoP_S_initLibraryHelper(void);
 static void SECoP_S_initLibraryExit(void);
 static void SECoP_S_initLibraryExitHelper(bool bAtExit,QString szContextID);
 static void SECoP_S_MessageHandler(QtMsgType iType, const QMessageLogContext &context, const QString &szMessage);
-
+static bool SECoP_S_initLogFile(const char* logFilePath, int maxSize,  int maxFiles);
+static void SECoP_S_closeLogFile();
 /*
  * \brief SECoP_S_initLibrary is the first function to call. It initializes
  *        the library and prepares internal data. The pApplication pointer
@@ -208,6 +222,126 @@ void SECoP_S_initLibraryHelper(void)
 }
 
 /**
+ * \brief Initialize the log file with rotation support
+ * \param[in] logFilePath path to log file, if nullptr or empty uses default "shall_server.log"
+ * \param[in] maxSize maximum size in bytes before rotation (default 10MB)
+ * \param[in] maxFiles maximum number of backup files to keep (default 5)
+ * \return true if log file was opened successfully, false otherwise
+ */
+static bool SECoP_S_initLogFile(const char* logFilePath = nullptr, int maxSize = 10 * 1024 * 1024, int maxFiles = 5)
+{
+    if (g_pLogFile != nullptr)
+        return true; // Already initialized
+    
+    // Update the global variables
+    g_maxLogSize = maxSize;
+    g_maxLogFiles = maxFiles;
+
+    
+    const char* filePath = (logFilePath != nullptr && strlen(logFilePath) > 0) ? 
+                           logFilePath : "shall_server.log";
+    g_logFilePath = QString(filePath);
+    
+    // Check if the log file exists and exceeds max size
+    QFileInfo fileInfo(g_logFilePath);
+    if (fileInfo.exists() && fileInfo.size() >= g_maxLogSize) {
+        // Perform rotation
+        QDir dir = fileInfo.dir();
+        
+        // Remove oldest log file if it exists
+        if (g_maxLogFiles > 0) {
+            QString oldestFile = g_logFilePath + QString(".%1").arg(g_maxLogFiles);
+            if (dir.exists(oldestFile))
+                dir.remove(oldestFile);
+        }
+        
+        // Shift older log files
+        for (int i = g_maxLogFiles - 1; i >= 1; --i) {
+            QString oldName = g_logFilePath + QString(".%1").arg(i);
+            QString newName = g_logFilePath + QString(".%1").arg(i + 1);
+            if (dir.exists(oldName))
+                dir.rename(oldName, newName);
+        }
+        
+        // Rename current log file
+        if (g_maxLogFiles > 0)
+            dir.rename(g_logFilePath, g_logFilePath + ".1");
+    }
+    
+    g_pLogFile = fopen(filePath, "a");
+    if (g_pLogFile == nullptr)
+        return false;
+    
+    // Add header to log file
+    fprintf(g_pLogFile, "\n--- Log started at %s ---\n", 
+            qPrintable(QDateTime::currentDateTime().toString("yyyy/MM/dd HH:mm:ss.zzz")));
+    fflush(g_pLogFile);
+    
+    return true;
+}
+
+/**
+ * \brief Check if log needs rotation and rotate if necessary
+ * \return true if rotation was performed
+ */
+static bool SECoP_S_checkLogRotation()
+{
+    if (g_pLogFile == nullptr)
+        return false;
+        
+    if (ftell(g_pLogFile) >= g_maxLogSize) {
+
+        // Close current file
+        SECoP_S_closeLogFile();
+        
+        // Reinitialize (which will handle rotation)
+        return SECoP_S_initLogFile(g_logFilePath.toStdString().c_str(),g_maxLogSize, g_maxLogFiles);
+    }
+    
+    return false;
+}
+
+/**
+ * \brief Close the log file if it's open
+ */
+static void SECoP_S_closeLogFile()
+{
+    if (g_pLogFile != nullptr)
+    {
+        fprintf(g_pLogFile, "--- Log closed at %s ---\n", 
+                qPrintable(QDateTime::currentDateTime().toString("yyyy/MM/dd HH:mm:ss.zzz")));
+        fflush(g_pLogFile);
+        fclose(g_pLogFile);
+        g_pLogFile = nullptr;
+    }
+}
+
+/**
+ * \brief Initialize logging to a file
+ * \ingroup expfunc
+ * \param[in] szLogFilePath path to log file, if nullptr uses default "shall_server.log"
+ * \return 1 if successful, 0 if failed
+ */
+extern "C" enum SECoP_S_error SHALL_EXPORT SECoP_S_enableFileLogging(const char* szLogFilePath, 
+    long long maxSizeBytes,
+    int maxBackupFiles)
+    {
+        return SECoP_S_initLogFile(szLogFilePath, maxSizeBytes, maxBackupFiles) ? 
+               SECoP_S_SUCCESS : SECoP_S_ERROR_INTERNAL;
+    }
+
+/**
+ * \brief Stop logging to file and close the log file
+ * \ingroup expfunc
+ */
+extern "C" void SHALL_EXPORT SECoP_S_disableFileLogging()
+{
+    SECoP_S_closeLogFile();
+}
+
+
+
+/**
  * \brief This function is called by the global exit handler at lib-C exit.
  * \ingroup intfunc
  */
@@ -230,6 +364,10 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
         g_pSECoPMain->cleanUp(true,szContextID);
         return;
     }
+
+    // Close log file before uninstalling message handler
+    SECoP_S_closeLogFile();
+
     qInstallMessageHandler(g_pOldMessageHandler);
     g_pOldMessageHandler = nullptr;
     if (g_pSECoPMain != nullptr)
@@ -444,11 +582,29 @@ void SECoP_S_MessageHandler(QtMsgType iType, const QMessageLogContext &context, 
     if (!bMultiLine)
         szOutput.prepend(QChar(' '));
     szOutput.prepend(QString("%1(%2)/%3:").arg(context.file).arg(context.line).arg(szMsgType));
-    if (g_pOldMessageHandler == nullptr) // if we never had a previous message logger or Windows
-        std::cerr << qUtf8Printable(QDateTime::currentDateTime().toString("yyyy/MM/dd HH:mm:ss.zzz "))
-                  << qUtf8Printable(szOutput) << std::endl;
-    SECoP_S_Main::log(nullptr, szOutput, false);
-    if (g_pOldMessageHandler != nullptr) // call previous message logger
+    
+    // Format with timestamp for log and console output
+    QString fullMessage = QDateTime::currentDateTime().toString("yyyy/MM/dd HH:mm:ss.zzz ") + szOutput;
+
+    // Output to console if no previous handler
+    if (g_pOldMessageHandler == nullptr)
+        std::cerr << qUtf8Printable(fullMessage) << std::endl;
+    
+    // Write to log file if available
+    if (g_pLogFile != nullptr)
+    {
+        fprintf(g_pLogFile, "%s\n", qPrintable(fullMessage));
+        fflush(g_pLogFile);
+
+        // Check if we need to rotate after writing
+        SECoP_S_checkLogRotation();
+    }
+
+    if (szMsgType != "debug")
+        SECoP_S_Main::log(nullptr, szOutput, false);
+    
+    // Call previous message logger
+    if (g_pOldMessageHandler != nullptr)
         (*g_pOldMessageHandler)(iType, context, szMessage);
 }
 
