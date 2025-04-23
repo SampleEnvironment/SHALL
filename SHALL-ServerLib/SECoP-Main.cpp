@@ -365,9 +365,14 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
         return;
     }
 
+    // Add these lines here to ensure safe shutdown in Qt6
+
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents); // Process any pending events once
+    // Then disable further event processing
+    QCoreApplication::setQuitLockEnabled(false);
+
     // Close log file before uninstalling message handler
     SECoP_S_closeLogFile();
-
     qInstallMessageHandler(g_pOldMessageHandler);
     g_pOldMessageHandler = nullptr;
     if (g_pSECoPMain != nullptr)
