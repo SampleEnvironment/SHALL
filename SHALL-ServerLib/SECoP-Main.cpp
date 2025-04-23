@@ -378,7 +378,7 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
         while (g_bInitialized)
             std::this_thread::yield();
     }
-    else
+    else if (g_pSECoPMain != nullptr)
     {
         qint64 qiStart(QDateTime::currentMSecsSinceEpoch());
         while (g_pSECoPMain->getInstance() != nullptr)
@@ -387,7 +387,8 @@ void SECoP_S_initLibraryExitHelper(bool bAtExit, QString szContextID)
             if ((QDateTime::currentMSecsSinceEpoch() - qiStart) >= 5000)
                 break;
         }
-        if (g_pSECoPMain->getInstance() != nullptr)
+        // Only delete if still not null
+        if (g_pSECoPMain != nullptr && g_pSECoPMain->getInstance() != nullptr)
             delete g_pSECoPMain;
     }
     if (g_pSECoPMain != nullptr)
