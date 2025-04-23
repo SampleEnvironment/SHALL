@@ -249,7 +249,7 @@ void SECoP_S_Worker::writeData(QByteArray szData)
         szData.chop(1);
     szData.append(10);
     SECoP_S_Main::log(m_pNode, QString("[send %1] %2").arg(m_szClientInfo).arg(QString(szData)), true);
-    qDebug() << "TX:" << QString(szData);
+    qDebug().noquote() << m_pNode->getNodeID() << "TX:" << QString(szData);
     m_pSocket->write(szData);
 }
 
@@ -681,7 +681,7 @@ void SECoP_S_Worker::parseData(QString szData)
 {
     // split on first space to split instruction from data
     SECoP_S_Main::log(m_pNode, QString("[recv %1] %2").arg(m_szClientInfo).arg(szData), true);
-    qDebug() << "RX:" << QString(szData);
+    qDebug().noquote() << m_pNode->getNodeID() << "RX:" << QString(szData);
     QString szSECoPCmd, szCommandLine(szData);
     int iPos(szData.indexOf(' '));
     if (iPos >= 0)

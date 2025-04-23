@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
     pSimulator->show();
     pSimulator->connect(pSimulator, SIGNAL(finished(int)), &app, SLOT(quit()), Qt::QueuedConnection);
 
-    SECoP_S_enableFileLogging(nullptr,100000,5);
+    SECoP_S_enableFileLogging(nullptr,1000000,5);
 
     SECoP_S_initLibrary(&app, true, true,context_id);
     SECoP_S_setManyThreads(0);
