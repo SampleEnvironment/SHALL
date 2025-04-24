@@ -75,6 +75,9 @@ SECoP_S_Node::SECoP_S_Node(QString szContextID,QString szNodeID, QString szDesc,
  */
 SECoP_S_Node::~SECoP_S_Node()
 {
+
+    qDebug() << "SECoP_S_Node destructor called for node:" << getNodeID();
+    
     QThread* pMySelfThread(QThread::currentThread());
     if (m_pServer != nullptr)
         delete m_pServer;
@@ -104,7 +107,7 @@ SECoP_S_Node::~SECoP_S_Node()
 
         pModule->moveToThread(pMySelfThread);
 
-        delete pModule;
+            delete pModule;
 
         if (pModuleThread != pMySelfThread)
             pModuleThread->quit();

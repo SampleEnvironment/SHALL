@@ -55,6 +55,8 @@ SECoP_S_Module::SECoP_S_Module(QString szModuleName, SECoP_S_Node *pNode, QObjec
  */
 SECoP_S_Module::~SECoP_S_Module()
 {
+    qDebug() << "SECoP_S_Module destructor called for module:" << getModuleID();
+
     if (m_iPollTimerId > 0)
         killTimer(m_iPollTimerId);
     for (auto it = m_apCommands.begin(); it != m_apCommands.end(); ++it)
